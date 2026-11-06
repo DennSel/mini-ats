@@ -25,7 +25,10 @@ export function LoginPage() {
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<Values>({ resolver: zodResolver(schema), defaultValues: { email: "", password: "" } });
+  } = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: { email: "", password: "" },
+  });
 
   const onSubmit = (v: Values) => {
     const user = login(v.email, v.password);
@@ -104,10 +107,18 @@ export function LoginPage() {
           <div className="h-px flex-1 bg-border" />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <Button type="button" variant="outline" onClick={() => fill("admin@kandsys.se", "admin123")}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fill("admin@kandsys.se", "admin123")}
+          >
             <Shield className="text-primary" /> Admin
           </Button>
-          <Button type="button" variant="outline" onClick={() => fill("anna@nordvik.se", "kund123")}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fill("anna@nordvik.se", "kund123")}
+          >
             <UserIcon className="text-accent-3" /> Kund
           </Button>
         </div>

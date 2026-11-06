@@ -1,6 +1,17 @@
 import type { ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Briefcase, Kanban, Users, UserCog, Moon, ShieldCheck, Sun, LogOut, ChevronsUpDown, Menu } from "lucide-react";
+import {
+  Briefcase,
+  Kanban,
+  Users,
+  UserCog,
+  Moon,
+  ShieldCheck,
+  Sun,
+  LogOut,
+  ChevronsUpDown,
+  Menu,
+} from "lucide-react";
 import { useAts } from "@/lib/ats-store";
 import { useTheme } from "@/lib/theme";
 import { AmbientBackground, Avatar, Logo } from "@/components/shared";
@@ -12,7 +23,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 function useNavItems() {
   const { currentUser, can } = useAts();
@@ -21,7 +38,9 @@ function useNavItems() {
     { to: "/board" as const, label: "Pipeline", icon: Kanban },
     { to: "/candidates" as const, label: "Kandidater", icon: Users },
     ...(can("manageTeam") ? [{ to: "/team" as const, label: "Team", icon: UserCog }] : []),
-    ...(currentUser?.role === "admin" ? [{ to: "/admin" as const, label: "Admin", icon: ShieldCheck }] : []),
+    ...(currentUser?.role === "admin"
+      ? [{ to: "/admin" as const, label: "Admin", icon: ShieldCheck }]
+      : []),
   ];
 }
 
@@ -64,7 +83,9 @@ function Nav() {
           to={item.to}
           aria-label={item.label}
           className="flex shrink-0 items-center gap-2 rounded-xl border border-transparent px-3 py-1.5 font-display text-[13px] font-semibold text-muted-foreground transition hover:bg-surface-high hover:text-foreground"
-          activeProps={{ className: "nav-active !text-foreground [&_svg]:text-primary [&_span]:inline" }}
+          activeProps={{
+            className: "nav-active !text-foreground [&_svg]:text-primary [&_span]:inline",
+          }}
         >
           <item.icon className="h-4 w-4 shrink-0" />
           <span className="hidden sm:inline">{item.label}</span>

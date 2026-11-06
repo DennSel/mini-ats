@@ -13,8 +13,7 @@ const buttonVariants = cva(
         gradient:
           "btn-gradient text-on-primary active:scale-95 [&_.icon-rotate]:transition-transform hover:[&_.icon-rotate]:rotate-90",
         destructive: "bg-destructive text-on-primary shadow-sm hover:bg-destructive/90",
-        outline:
-          "border border-border bg-surface-low text-foreground hover:bg-surface-high",
+        outline: "border border-border bg-surface-low text-foreground hover:bg-surface-high",
         secondary: "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "text-muted-foreground hover:bg-surface-high hover:text-foreground",
         link: "text-primary underline-offset-4 hover:underline",

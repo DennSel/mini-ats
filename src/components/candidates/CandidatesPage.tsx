@@ -13,7 +13,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Avatar, stageStyles } from "@/components/shared";
 import { cn } from "@/lib/utils";
 import { POOL, WithCandidatePanel, useIsDesktop } from "@/components/board/CandidatePanel";
@@ -25,22 +31,32 @@ export function CandidatesPage() {
   const { candidates, jobs, activeOrgId, assignCandidate, can, orgJobs, orgCandidates } = useAts();
   const [jobFilter, setJobFilter] = usePersistentState<string>("cands.job", ALL);
   const [q, setQ] = usePersistentState("cands.q", "");
-  const [sort, setSort] = usePersistentState<"recent" | "oldest" | "stage" | "name" | "name-desc">("cands.sort", "recent");
+  const [sort, setSort] = usePersistentState<"recent" | "oldest" | "stage" | "name" | "name-desc">(
+    "cands.sort",
+    "recent",
+  );
   const [selectedId, setSelectedId] = usePersistentState<string | null>("cands.selected", null);
   const desktop = useIsDesktop();
-  const [rawDialog, setDialog] = usePersistentState<{ open: boolean | null; candidate: Candidate | null }>("cands.dialog", { open: null, candidate: null });
+  const [rawDialog, setDialog] = usePersistentState<{
+    open: boolean | null;
+    candidate: Candidate | null;
+  }>("cands.dialog", { open: null, candidate: null });
   const canMove = can("moveCandidates");
   const canManage = can("manageCandidates");
-  const dialog = { candidate: rawDialog.candidate, open: rawDialog.open ?? (desktop && canManage && !selectedId) };
+  const dialog = {
+    candidate: rawDialog.candidate,
+    open: rawDialog.open ?? (desktop && canManage && !selectedId),
+  };
 
-    const orgCands = orgCandidates;
+  const orgCands = orgCandidates;
   const query = q.trim().toLowerCase();
   const visible = orgCands.filter(
     (c) =>
       (jobFilter === ALL || (jobFilter === POOL ? c.jobId === null : c.jobId === jobFilter)) &&
       (!query || `${c.name} ${c.email}`.toLowerCase().includes(query)),
   );
-  const stageIdx = (c: Candidate) => (c.jobId === null ? STAGES.length : STAGES.findIndex((s) => s.id === c.stage));
+  const stageIdx = (c: Candidate) =>
+    c.jobId === null ? STAGES.length : STAGES.findIndex((s) => s.id === c.stage);
   visible.sort((a, b) =>
     sort === "stage"
       ? stageIdx(a) - stageIdx(b) || a.name.localeCompare(b.name, "sv")
@@ -57,7 +73,9 @@ export function CandidatesPage() {
 
   const send = (c: Candidate, jobId: string | null) => {
     assignCandidate(c.id, jobId);
-    toast.success(jobId ? `${c.name} skickades till ${jobTitle(jobId)}` : `${c.name} är nu vilande`);
+    toast.success(
+      jobId ? `${c.name} skickades till ${jobTitle(jobId)}` : `${c.name} är nu vilande`,
+    );
   };
 
   const addInline = desktop && dialog.open && !dialog.candidate;
@@ -65,7 +83,17 @@ export function CandidatesPage() {
 
   return (
     <WithCandidatePanel
-      side={addInline ? <CandidateDialog inline open candidate={null} defaultJobId={jobFilter === ALL ? POOL : jobFilter} onOpenChange={closeDialog} /> : undefined}
+      side={
+        addInline ? (
+          <CandidateDialog
+            inline
+            open
+            candidate={null}
+            defaultJobId={jobFilter === ALL ? POOL : jobFilter}
+            onOpenChange={closeDialog}
+          />
+        ) : undefined
+      }
       onSideClose={() => closeDialog(false)}
       candidateId={selectedId}
       onClose={() => setSelectedId(null)}
@@ -76,17 +104,27 @@ export function CandidatesPage() {
     >
       <div className="glass flex flex-col gap-2 rounded-2xl p-2 md:flex-row md:items-center">
         <Select value={jobFilter} onValueChange={setJobFilter}>
-          <SelectTrigger className="h-9 rounded-xl border-border bg-surface-low md:w-64" aria-label="Filtrera på jobb">
+          <SelectTrigger
+            className="h-9 rounded-xl border-border bg-surface-low md:w-64"
+            aria-label="Filtrera på jobb"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>Alla kandidater ({orgCands.length})</SelectItem>
             <SelectItem value={POOL}>Vilande ({poolCount})</SelectItem>
-            {orgJobs.map((j) => <SelectItem key={j.id} value={j.id}>{j.title}</SelectItem>)}
+            {orgJobs.map((j) => (
+              <SelectItem key={j.id} value={j.id}>
+                {j.title}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
-          <SelectTrigger className="h-9 rounded-xl border-border bg-surface-low md:w-44" aria-label="Sortera">
+          <SelectTrigger
+            className="h-9 rounded-xl border-border bg-surface-low md:w-44"
+            aria-label="Sortera"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -133,14 +171,23 @@ export function CandidatesPage() {
               <Avatar name={c.name} size="sm" />
               <div className="min-w-0 flex-1">
                 <div className="truncate font-display text-[13px] font-semibold">{c.name}</div>
-                <div className="truncate text-[11px] text-muted-foreground">{c.email || c.phone || "–"}</div>
+                <div className="truncate text-[11px] text-muted-foreground">
+                  {c.email || c.phone || "–"}
+                </div>
               </div>
               <div className="flex min-w-0 items-center gap-2 sm:w-64">
                 {c.jobId ? (
                   <>
-                    <span className="truncate text-[12px] text-muted-foreground">{jobTitle(c.jobId)}</span>
+                    <span className="truncate text-[12px] text-muted-foreground">
+                      {jobTitle(c.jobId)}
+                    </span>
                     {stage && (
-                      <span className={cn("shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold", stageStyles[c.stage].pill)}>
+                      <span
+                        className={cn(
+                          "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+                          stageStyles[c.stage].pill,
+                        )}
+                      >
                         {stage.label}
                       </span>
                     )}
@@ -151,23 +198,36 @@ export function CandidatesPage() {
                   </span>
                 )}
               </div>
-              <span className="hidden font-mono text-[10px] text-faint md:block">{c.createdAt}</span>
+              <span className="hidden font-mono text-[10px] text-faint md:block">
+                {c.createdAt}
+              </span>
               {canMove && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button size="sm" variant="outline" className="border-primary/30 text-primary" onClick={(e) => e.stopPropagation()}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-primary/30 text-primary"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <Send /> Skicka till jobb
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                     <DropdownMenuLabel className="text-[11px]">Skicka till</DropdownMenuLabel>
-                    {orgJobs.filter((j) => j.status === "open" && j.id !== c.jobId).map((j) => (
-                      <DropdownMenuItem key={j.id} onSelect={() => send(c, j.id)}>{j.title}</DropdownMenuItem>
-                    ))}
+                    {orgJobs
+                      .filter((j) => j.status === "open" && j.id !== c.jobId)
+                      .map((j) => (
+                        <DropdownMenuItem key={j.id} onSelect={() => send(c, j.id)}>
+                          {j.title}
+                        </DropdownMenuItem>
+                      ))}
                     {c.jobId && (
                       <>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => send(c, null)}>Gör vilande</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => send(c, null)}>
+                          Gör vilande
+                        </DropdownMenuItem>
                       </>
                     )}
                   </DropdownMenuContent>
@@ -176,7 +236,9 @@ export function CandidatesPage() {
             </div>
           );
         })}
-        {visible.length === 0 && <p className="p-8 text-center text-muted-foreground">Inga kandidater hittades.</p>}
+        {visible.length === 0 && (
+          <p className="p-8 text-center text-muted-foreground">Inga kandidater hittades.</p>
+        )}
       </div>
 
       <CandidateDialog

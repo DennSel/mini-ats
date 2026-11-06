@@ -32,19 +32,32 @@ export function visibleJobs(user: User | null | undefined, jobs: Job[], orgId: s
 }
 
 /** Dormant candidates are visible to everyone in the org; others follow job access. */
-export function visibleCandidates(user: User | null | undefined, candidates: Candidate[], orgId: string | null) {
-  return candidates.filter((c) => c.orgId === orgId && (c.jobId === null || canSeeJob(user, c.jobId)));
+export function visibleCandidates(
+  user: User | null | undefined,
+  candidates: Candidate[],
+  orgId: string | null,
+) {
+  return candidates.filter(
+    (c) => c.orgId === orgId && (c.jobId === null || canSeeJob(user, c.jobId)),
+  );
 }
 
 /** An organisation must always keep at least one owner. */
 export function isLastOwner(users: User[], userId: string) {
   const u = users.find((x) => x.id === userId);
   if (!u || u.role !== "customer" || u.orgRole !== "owner") return false;
-  return users.filter((x) => x.orgId === u.orgId && x.role === "customer" && x.orgRole === "owner").length === 1;
+  return (
+    users.filter((x) => x.orgId === u.orgId && x.role === "customer" && x.orgRole === "owner")
+      .length === 1
+  );
 }
 
 /** Send a candidate to another job (or to the dormant pool with null); restarts at "Ny". */
-export function assignCandidate(candidates: Candidate[], id: string, jobId: string | null): Candidate[] {
+export function assignCandidate(
+  candidates: Candidate[],
+  id: string,
+  jobId: string | null,
+): Candidate[] {
   const c = candidates.find((x) => x.id === id);
   if (!c || c.jobId === jobId) return candidates;
   return [...candidates.filter((x) => x.id !== id), { ...c, jobId, stage: "new" }];

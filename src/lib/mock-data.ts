@@ -3,9 +3,21 @@ export type Role = "admin" | "customer";
 export type OrgRole = "owner" | "recruiter" | "reviewer" | "viewer";
 
 export const ORG_ROLES: { id: OrgRole; label: string; description: string }[] = [
-  { id: "owner", label: "Ägare", description: "Allt, inkl. bjuda in/ta bort medarbetare och styra jobbåtkomst" },
-  { id: "recruiter", label: "Rekryterare", description: "Skapa/redigera jobb och kandidater, flytta och anteckna" },
-  { id: "reviewer", label: "Bedömare", description: "Flytta kandidater mellan steg och skriva anteckningar" },
+  {
+    id: "owner",
+    label: "Ägare",
+    description: "Allt, inkl. bjuda in/ta bort medarbetare och styra jobbåtkomst",
+  },
+  {
+    id: "recruiter",
+    label: "Rekryterare",
+    description: "Skapa/redigera jobb och kandidater, flytta och anteckna",
+  },
+  {
+    id: "reviewer",
+    label: "Bedömare",
+    description: "Flytta kandidater mellan steg och skriva anteckningar",
+  },
   { id: "viewer", label: "Läsare", description: "Se jobb och kandidater" },
 ];
 
@@ -252,7 +264,10 @@ function buildCandidates(orgId: string, names: string[], jobIds: string[], domai
       email: `${s.replace("-", ".")}@${domain}`,
       phone: `07${(i % 3) + 0}-${String(100 + i * 37).padStart(3, "0")} ${String(10 + i * 7).padStart(2, "0")} ${String(20 + i * 3).padStart(2, "0")}`,
       linkedin: `https://www.linkedin.com/in/${s}`,
-      links: i % 4 === 0 ? [{ id: `l-${orgId}-${i}`, label: "GitHub", url: `https://github.com/${s}` }] : [],
+      links:
+        i % 4 === 0
+          ? [{ id: `l-${orgId}-${i}`, label: "GitHub", url: `https://github.com/${s}` }]
+          : [],
       note: "",
       stage: dormant ? "new" : stageCycle[i % stageCycle.length]!,
       createdAt: `2026-10-${day}`,

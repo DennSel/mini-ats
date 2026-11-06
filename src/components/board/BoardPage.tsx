@@ -14,13 +14,23 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
 import { Plus, Search, X } from "lucide-react";
 import { useAts } from "@/lib/ats-store";
 import { filterCandidates } from "@/lib/ats-logic";
 import { STAGES, type Candidate, type Stage } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { stageStyles } from "@/components/shared";
 import { cn } from "@/lib/utils";
 import { CandidateCardView, SortableCandidateCard } from "./CandidateCard";
@@ -37,10 +47,13 @@ export function BoardPage({ job, q }: { job: string; q: string }) {
   const [qInput, setQInput] = useState(q);
   const [selectedId, setSelectedId] = usePersistentState<string | null>("board.selected", null);
   const desktop = useIsDesktop();
-  const [dialog, setDialog] = usePersistentState<{ open: boolean; candidate: Candidate | null }>("board.dialog", {
-    open: false,
-    candidate: null,
-  });
+  const [dialog, setDialog] = usePersistentState<{ open: boolean; candidate: Candidate | null }>(
+    "board.dialog",
+    {
+      open: false,
+      candidate: null,
+    },
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const jobValid = orgJobs.some((j) => j.id === job);
@@ -49,12 +62,21 @@ export function BoardPage({ job, q }: { job: string; q: string }) {
   useEffect(() => setQInput(q), [q]);
   useEffect(() => {
     if (qInput === q) return;
-    const t = setTimeout(() => navigate({ search: (p) => ({ ...p, q: qInput }), replace: true }), 300);
+    const t = setTimeout(
+      () => navigate({ search: (p) => ({ ...p, q: qInput }), replace: true }),
+      300,
+    );
     return () => clearTimeout(t);
   }, [qInput, q, navigate]);
 
   const visible = useMemo(
-    () => filterCandidates(orgCandidates, { orgId: activeOrgId, jobId: jobFilter, q, assignedOnly: true }),
+    () =>
+      filterCandidates(orgCandidates, {
+        orgId: activeOrgId,
+        jobId: jobFilter,
+        q,
+        assignedOnly: true,
+      }),
     [orgCandidates, activeOrgId, jobFilter, q],
   );
   const jobTitle = (id: string | null) => jobs.find((j) => j.id === id)?.title ?? "";
@@ -97,7 +119,17 @@ export function BoardPage({ job, q }: { job: string; q: string }) {
 
   return (
     <WithCandidatePanel
-      side={addInline ? <CandidateDialog inline open candidate={null} defaultJobId={jobFilter} onOpenChange={closeDialog} /> : undefined}
+      side={
+        addInline ? (
+          <CandidateDialog
+            inline
+            open
+            candidate={null}
+            defaultJobId={jobFilter}
+            onOpenChange={closeDialog}
+          />
+        ) : undefined
+      }
       onSideClose={() => closeDialog(false)}
       candidateId={selectedId}
       onClose={() => setSelectedId(null)}
@@ -174,7 +206,9 @@ export function BoardPage({ job, q }: { job: string; q: string }) {
           <div
             className={cn(
               "-mx-4 mt-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-4 lg:-mx-0 lg:px-0",
-              !selectedId && !addInline && "xl:grid xl:grid-cols-6 xl:overflow-visible xl:snap-none",
+              !selectedId &&
+                !addInline &&
+                "xl:grid xl:grid-cols-6 xl:overflow-visible xl:snap-none",
             )}
           >
             {STAGES.map((s) => (
@@ -192,7 +226,9 @@ export function BoardPage({ job, q }: { job: string; q: string }) {
             ))}
           </div>
           <DragOverlay>
-            {active && <CandidateCardView candidate={active} jobTitle={jobTitle(active.jobId)} dragging />}
+            {active && (
+              <CandidateCardView candidate={active} jobTitle={jobTitle(active.jobId)} dragging />
+            )}
           </DragOverlay>
         </DndContext>
 
@@ -242,7 +278,9 @@ function Column({
           <span className={cn("h-2 w-2 rounded-full", st.dot)} />
           <h2 className={cn("label-caps text-[11px]", st.text)}>{label}</h2>
         </div>
-        <span className={cn("rounded-full border px-2 py-0.5 font-mono text-[10px]", st.pill)}>{items.length}</span>
+        <span className={cn("rounded-full border px-2 py-0.5 font-mono text-[10px]", st.pill)}>
+          {items.length}
+        </span>
       </header>
       <SortableContext items={items.map((c) => c.id)} strategy={verticalListSortingStrategy}>
         <div className="flex flex-1 flex-col gap-2">

@@ -6,7 +6,9 @@ const KEY = "ats-theme";
 /** Runs before paint (inlined in <head>) so the stored theme applies without a flash. */
 export const themeInitScript = `(function(){try{var t=localStorage.getItem('${KEY}');if(t==='light'){document.documentElement.classList.remove('dark');}}catch(e){}})();`;
 
-const tg = globalThis as unknown as { __themeContext?: React.Context<{ theme: Theme; toggle: () => void }> };
+const tg = globalThis as unknown as {
+  __themeContext?: React.Context<{ theme: Theme; toggle: () => void }>;
+};
 const ThemeContext = (tg.__themeContext ??= createContext<{ theme: Theme; toggle: () => void }>({
   theme: "dark",
   toggle: () => {},

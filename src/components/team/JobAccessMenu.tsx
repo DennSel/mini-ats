@@ -29,7 +29,13 @@ export function JobAccessMenu({
   const btn = "h-10 w-full justify-between rounded-xl sm:w-40 " + (className ?? "");
   if (orgRole === "owner") {
     return (
-      <Button type="button" variant="outline" size="sm" disabled className={btn + " disabled:opacity-70"}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        disabled
+        className={btn + " disabled:opacity-70"}
+      >
         <span className="flex min-w-0 items-center gap-1.5">
           <Briefcase className="shrink-0" /> <span className="truncate">Alla jobb (ägare)</span>
         </span>
@@ -54,8 +60,14 @@ export function JobAccessMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel className="text-[11px]">{name ? `Jobb ${name.split(" ")[0]} har tillgång till` : "Jobb med tillgång"}</DropdownMenuLabel>
-        <DropdownMenuCheckboxItem checked={all} onSelect={(e) => e.preventDefault()} onCheckedChange={() => onChange(all ? [] : undefined)}>
+        <DropdownMenuLabel className="text-[11px]">
+          {name ? `Jobb ${name.split(" ")[0]} har tillgång till` : "Jobb med tillgång"}
+        </DropdownMenuLabel>
+        <DropdownMenuCheckboxItem
+          checked={all}
+          onSelect={(e) => e.preventDefault()}
+          onCheckedChange={() => onChange(all ? [] : undefined)}
+        >
           Alla jobb
         </DropdownMenuCheckboxItem>
         <DropdownMenuSeparator />

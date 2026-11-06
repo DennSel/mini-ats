@@ -72,7 +72,9 @@ export function Logo({ className, ...props }: LogoProps) {
       <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[#5d5fe7] to-[#7948c2] text-white shadow-sm">
         <Handshake className="h-4 w-4" />
       </div>
-      <span className="font-display text-lg font-bold tracking-tight text-foreground whitespace-nowrap">KandSys</span>
+      <span className="font-display text-lg font-bold tracking-tight text-foreground whitespace-nowrap">
+        KandSys
+      </span>
     </div>
   );
 }
@@ -127,7 +129,13 @@ export function Avatar({
   );
 }
 
-export function CountPill({ children, className }: { children: React.ReactNode; className?: string }) {
+export function CountPill({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <span
       className={cn(
@@ -160,7 +168,10 @@ export function StatusPill({ status }: { status: JobStatus }) {
   );
 }
 
-export const stageStyles: Record<Stage, { dot: string; text: string; pill: string; hoverBorder: string }> = {
+export const stageStyles: Record<
+  Stage,
+  { dot: string; text: string; pill: string; hoverBorder: string }
+> = {
   new: {
     dot: "bg-stage-new",
     text: "text-stage-new",

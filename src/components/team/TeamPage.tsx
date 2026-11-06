@@ -19,7 +19,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Avatar, WithSidePanel, useIsDesktop, usePersistentState, FieldError, inputClass, labelClass } from "@/components/shared";
+import {
+  Avatar,
+  WithSidePanel,
+  useIsDesktop,
+  usePersistentState,
+  FieldError,
+  inputClass,
+  labelClass,
+} from "@/components/shared";
 import { OrgRoleSelect } from "./OrgRoleSelect";
 import { JobAccessMenu } from "./JobAccessMenu";
 
@@ -31,7 +39,8 @@ const schema = z.object({
 type Values = z.infer<typeof schema>;
 
 export function TeamPage() {
-  const { users, jobs, currentUser, activeOrgId, activeOrg, createUser, updateUser, deleteUser } = useAts();
+  const { users, jobs, currentUser, activeOrgId, activeOrg, createUser, updateUser, deleteUser } =
+    useAts();
   const allOrgJobs = jobs.filter((j) => j.orgId === activeOrgId);
   const desktop = useIsDesktop();
   const [rawOpen, setOpen] = usePersistentState<boolean | null>("team.invite", null);
@@ -39,7 +48,14 @@ export function TeamPage() {
   const [remove, setRemove] = useState<User | null>(null);
   const members = users.filter((u) => u.role === "customer" && u.orgId === activeOrgId);
 
-  const { register, handleSubmit, reset, control, watch, formState: { errors } } = useForm<Values>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    watch,
+    formState: { errors },
+  } = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: { name: "", email: "", orgRole: "recruiter" },
   });
@@ -51,7 +67,14 @@ export function TeamPage() {
       toast.error("E-postadressen används redan");
       return;
     }
-    createUser({ name: v.name, email: v.email, role: "customer", orgRole: v.orgRole, orgId: activeOrgId, ...(v.orgRole !== "owner" && inviteJobs ? { jobIds: inviteJobs } : {}) });
+    createUser({
+      name: v.name,
+      email: v.email,
+      role: "customer",
+      orgRole: v.orgRole,
+      orgId: activeOrgId,
+      ...(v.orgRole !== "owner" && inviteJobs ? { jobIds: inviteJobs } : {}),
+    });
     setInviteJobs(undefined);
     toast.success(`${v.name} bjöds in`);
     reset({ name: "", email: "", orgRole: "recruiter" });
@@ -73,98 +96,133 @@ export function TeamPage() {
   };
 
   const inviteForm = (
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-        <div>
-          <label htmlFor="t-name" className={labelClass}>Namn</label>
-          <input id="t-name" className={inputClass} {...register("name")} />
-          <FieldError message={errors.name?.message} />
-        </div>
-        <div>
-          <label htmlFor="t-email" className={labelClass}>E-post</label>
-          <input id="t-email" type="email" className={inputClass} {...register("email")} />
-          <FieldError message={errors.email?.message} />
-        </div>
-        <div>
-          <span className={labelClass}>Roll</span>
-          <Controller control={control} name="orgRole" render={({ field }) => <OrgRoleSelect value={field.value} onChange={field.onChange} />} />
-        </div>
-        <div>
-          <span className={labelClass}>Jobbåtkomst</span>
-          <JobAccessMenu orgRole={inviteRole} jobIds={inviteJobs} jobs={allOrgJobs} onChange={setInviteJobs} className="sm:w-full" />
-        </div>
-        <Button type="submit" variant="gradient" className="w-full"><UserPlus /> Bjud in</Button>
-      </form>
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+      <div>
+        <label htmlFor="t-name" className={labelClass}>
+          Namn
+        </label>
+        <input id="t-name" className={inputClass} {...register("name")} />
+        <FieldError message={errors.name?.message} />
+      </div>
+      <div>
+        <label htmlFor="t-email" className={labelClass}>
+          E-post
+        </label>
+        <input id="t-email" type="email" className={inputClass} {...register("email")} />
+        <FieldError message={errors.email?.message} />
+      </div>
+      <div>
+        <span className={labelClass}>Roll</span>
+        <Controller
+          control={control}
+          name="orgRole"
+          render={({ field }) => <OrgRoleSelect value={field.value} onChange={field.onChange} />}
+        />
+      </div>
+      <div>
+        <span className={labelClass}>Jobbåtkomst</span>
+        <JobAccessMenu
+          orgRole={inviteRole}
+          jobIds={inviteJobs}
+          jobs={allOrgJobs}
+          onChange={setInviteJobs}
+          className="sm:w-full"
+        />
+      </div>
+      <Button type="submit" variant="gradient" className="w-full">
+        <UserPlus /> Bjud in
+      </Button>
+    </form>
   );
 
   return (
-    <WithSidePanel side={open ? inviteForm : null} title="Bjud in medarbetare" onClose={() => setOpen(false)}>
-    <div>
-      <div className="min-w-0">
-        <div className="glass mb-3 flex items-center gap-2 rounded-2xl p-2 pl-4">
-          <p className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">
-            Medarbetare i <span className="font-semibold text-foreground">{activeOrg?.name}</span>
-          </p>
-          <Button variant="gradient" onClick={() => setOpen(true)}><UserPlus /> Bjud in medarbetare</Button>
-        </div>
-        <div className="glass-card overflow-hidden rounded-2xl">
-          {members.map((u) => (
-            <div key={u.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3 last:border-0 sm:flex">
-              <Avatar name={u.name} size="sm" />
-              <div className="min-w-0 sm:flex-1">
-                <div className="truncate font-display text-[13px] font-semibold">
-                  {u.name} {u.id === currentUser?.id && <span className="text-[11px] font-normal text-faint">(du)</span>}
-                </div>
-                <div className="truncate text-[11px] text-muted-foreground">{u.email}</div>
-              </div>
-              <div className="col-span-3 row-start-2 grid grid-cols-2 gap-2 sm:contents">
-                <OrgRoleSelect value={u.orgRole} onChange={(r) => changeRole(u, r)} className="w-full sm:w-36" />
-                <JobAccessMenu
-                  orgRole={u.orgRole}
-                  jobIds={u.jobIds}
-                  name={u.name}
-                  jobs={allOrgJobs}
-                  onChange={(jobIds) => setJobAccess(u.id, jobIds)}
-                />
-              </div>
-              <Button
-                size="icon"
-                variant="ghost"
-                aria-label={`Ta bort ${u.name}`}
-                disabled={u.id === currentUser?.id || isLastOwner(users, u.id)}
-                className="text-faint hover:bg-error-bg hover:text-error"
-                onClick={() => setRemove(u)}
+    <WithSidePanel
+      side={open ? inviteForm : null}
+      title="Bjud in medarbetare"
+      onClose={() => setOpen(false)}
+    >
+      <div>
+        <div className="min-w-0">
+          <div className="glass mb-3 flex items-center gap-2 rounded-2xl p-2 pl-4">
+            <p className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">
+              Medarbetare i <span className="font-semibold text-foreground">{activeOrg?.name}</span>
+            </p>
+            <Button variant="gradient" onClick={() => setOpen(true)}>
+              <UserPlus /> Bjud in medarbetare
+            </Button>
+          </div>
+          <div className="glass-card overflow-hidden rounded-2xl">
+            {members.map((u) => (
+              <div
+                key={u.id}
+                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3 last:border-0 sm:flex"
               >
-                <Trash2 />
-              </Button>
-            </div>
-          ))}
-          {members.length === 0 && <p className="p-8 text-center text-muted-foreground">Inga medarbetare ännu.</p>}
+                <Avatar name={u.name} size="sm" />
+                <div className="min-w-0 sm:flex-1">
+                  <div className="truncate font-display text-[13px] font-semibold">
+                    {u.name}{" "}
+                    {u.id === currentUser?.id && (
+                      <span className="text-[11px] font-normal text-faint">(du)</span>
+                    )}
+                  </div>
+                  <div className="truncate text-[11px] text-muted-foreground">{u.email}</div>
+                </div>
+                <div className="col-span-3 row-start-2 grid grid-cols-2 gap-2 sm:contents">
+                  <OrgRoleSelect
+                    value={u.orgRole}
+                    onChange={(r) => changeRole(u, r)}
+                    className="w-full sm:w-36"
+                  />
+                  <JobAccessMenu
+                    orgRole={u.orgRole}
+                    jobIds={u.jobIds}
+                    name={u.name}
+                    jobs={allOrgJobs}
+                    onChange={(jobIds) => setJobAccess(u.id, jobIds)}
+                  />
+                </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  aria-label={`Ta bort ${u.name}`}
+                  disabled={u.id === currentUser?.id || isLastOwner(users, u.id)}
+                  className="text-faint hover:bg-error-bg hover:text-error"
+                  onClick={() => setRemove(u)}
+                >
+                  <Trash2 />
+                </Button>
+              </div>
+            ))}
+            {members.length === 0 && (
+              <p className="p-8 text-center text-muted-foreground">Inga medarbetare ännu.</p>
+            )}
+          </div>
         </div>
+
+        <AlertDialog open={!!remove} onOpenChange={(o) => !o && setRemove(null)}>
+          <AlertDialogContent className="rounded-2xl border-border bg-surface">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="font-display">Ta bort medarbetare?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {remove?.name} förlorar åtkomst till organisationen.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="rounded-xl">Avbryt</AlertDialogCancel>
+              <AlertDialogAction
+                className="rounded-xl bg-destructive text-on-primary hover:bg-destructive/90"
+                onClick={() => {
+                  if (remove) deleteUser(remove.id);
+                  toast.success("Medarbetaren togs bort");
+                  setRemove(null);
+                }}
+              >
+                Ta bort
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
-
-
-      <AlertDialog open={!!remove} onOpenChange={(o) => !o && setRemove(null)}>
-        <AlertDialogContent className="rounded-2xl border-border bg-surface">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-display">Ta bort medarbetare?</AlertDialogTitle>
-            <AlertDialogDescription>{remove?.name} förlorar åtkomst till organisationen.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl">Avbryt</AlertDialogCancel>
-            <AlertDialogAction
-              className="rounded-xl bg-destructive text-on-primary hover:bg-destructive/90"
-              onClick={() => {
-                if (remove) deleteUser(remove.id);
-                toast.success("Medarbetaren togs bort");
-                setRemove(null);
-              }}
-            >
-              Ta bort
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
     </WithSidePanel>
   );
 }

@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { activeOrgFor, assignCandidate, can, canAccessAdmin, isLastOwner, filterCandidates, homePathFor, moveCandidate } from "@/lib/ats-logic";
+import {
+  activeOrgFor,
+  assignCandidate,
+  can,
+  canAccessAdmin,
+  isLastOwner,
+  filterCandidates,
+  homePathFor,
+  moveCandidate,
+} from "@/lib/ats-logic";
 import { seedCandidates, seedUsers, type User } from "@/lib/mock-data";
 
 const admin = seedUsers.find((u) => u.role === "admin")!;
@@ -56,9 +65,15 @@ describe("ats rules", () => {
   });
 
   it("sending to another job or dormant restarts at Ny", () => {
-    const c = seedCandidates.find((x) => x.stage === "interview" && x.jobId !== "job-n2" && x.orgId === "org-nordvik")!;
-    expect(assignCandidate(seedCandidates, c.id, "job-n2").find((x) => x.id === c.id)).toMatchObject({ jobId: "job-n2", stage: "new" });
-    expect(assignCandidate(seedCandidates, c.id, null).find((x) => x.id === c.id)?.jobId).toBeNull();
+    const c = seedCandidates.find(
+      (x) => x.stage === "interview" && x.jobId !== "job-n2" && x.orgId === "org-nordvik",
+    )!;
+    expect(
+      assignCandidate(seedCandidates, c.id, "job-n2").find((x) => x.id === c.id),
+    ).toMatchObject({ jobId: "job-n2", stage: "new" });
+    expect(
+      assignCandidate(seedCandidates, c.id, null).find((x) => x.id === c.id)?.jobId,
+    ).toBeNull();
   });
 });
 

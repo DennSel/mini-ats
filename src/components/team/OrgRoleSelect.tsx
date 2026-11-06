@@ -1,4 +1,10 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ORG_ROLES, type OrgRole } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +19,10 @@ export function OrgRoleSelect({
 }) {
   return (
     <Select value={value} onValueChange={(v) => onChange(v as OrgRole)}>
-      <SelectTrigger className={cn("h-10 rounded-xl border-border bg-surface-low", className)} aria-label="Roll">
+      <SelectTrigger
+        className={cn("h-10 rounded-xl border-border bg-surface-low", className)}
+        aria-label="Roll"
+      >
         <SelectValue>{ORG_ROLES.find((r) => r.id === value)?.label}</SelectValue>
       </SelectTrigger>
       <SelectContent>
