@@ -1,0 +1,279 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design tokens come verbatim from design.md (color table, section 2).
+ * :root = light theme, .dark = dark theme (default).
+ */
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", "Inter", ui-sans-serif, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-surface-lowest: var(--surface-lowest);
+  --color-surface-low: var(--surface-low);
+  --color-surface: var(--surface);
+  --color-surface-high: var(--surface-high);
+  --color-surface-highest: var(--surface-highest);
+  --color-faint: var(--text-faint);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary: var(--on-primary);
+  --color-accent-2: var(--accent-2);
+  --color-accent-3: var(--accent-3);
+  --color-pink: var(--pink);
+  --color-error: var(--error);
+  --color-error-bg: var(--error-bg);
+  --color-success: var(--success);
+  --color-stage-new: var(--stage-new);
+  --color-stage-screening: var(--stage-screening);
+  --color-stage-interview: var(--stage-interview);
+  --color-stage-offer: var(--stage-offer);
+  --color-stage-hired: var(--stage-hired);
+  --color-stage-rejected: var(--stage-rejected);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: #faf8ff;
+  --surface-lowest: #ffffff;
+  --surface-low: #f2f3ff;
+  --surface: #ffffff;
+  --surface-high: #e2e7ff;
+  --surface-highest: #dae2fd;
+  --border: rgba(199, 196, 216, 0.6);
+  --foreground: #131b2e;
+  --muted-foreground: #464555;
+  --text-faint: #777587;
+  --primary: #3525cd;
+  --primary-container: #4f46e5;
+  --on-primary: #ffffff;
+  --accent-2: #712ae2;
+  --accent-3: #006a7c;
+  --accent-3-glow: #4cd7f6;
+  --pink: #8a4cfc;
+  --error: #ba1a1a;
+  --error-bg: #ffdad6;
+  --success: #059669;
+
+  --stage-new: #0ea5e9;
+  --stage-screening: #7c3aed;
+  --stage-interview: #3525cd;
+  --stage-offer: #d97706;
+  --stage-hired: #059669;
+  --stage-rejected: #94a3b8;
+
+  --gradient-primary: linear-gradient(90deg, #3525cd, #712ae2, #006a7c);
+  --glow-primary: 0 4px 16px rgba(79, 70, 229, 0.25);
+  --glow-strong: 0 6px 22px rgba(79, 70, 229, 0.32);
+  --glass-shadow: 0 1px 8px rgba(15, 23, 42, 0.05);
+  --ambient-1: color-mix(in oklab, var(--primary) 9%, transparent);
+  --ambient-2: color-mix(in oklab, var(--accent-2) 7%, transparent);
+  --ambient-3: color-mix(in oklab, var(--accent-3-glow) 6%, transparent);
+
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface);
+  --popover-foreground: var(--foreground);
+  --primary-foreground: var(--on-primary);
+  --secondary: var(--surface-high);
+  --secondary-foreground: var(--foreground);
+  --muted: var(--surface-low);
+  --accent: var(--surface-high);
+  --accent-foreground: var(--foreground);
+  --destructive: var(--error);
+  --destructive-foreground: var(--on-primary);
+  --input: var(--border);
+  --ring: var(--primary);
+  --sidebar: var(--surface-lowest);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--on-primary);
+  --sidebar-accent: var(--surface-high);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--primary);
+}
+
+.dark {
+  --background: #0d0e14;
+  --surface-lowest: #090a0f;
+  --surface-low: #15161e;
+  --surface: #1a1b24;
+  --surface-high: #242531;
+  --surface-highest: #2e303d;
+  --border: rgba(255, 255, 255, 0.07);
+  --foreground: #f1f0f7;
+  --muted-foreground: #9d9bb0;
+  --text-faint: #606275;
+  --primary: #818cf8;
+  --primary-container: #6366f1;
+  --on-primary: #ffffff;
+  --accent-2: #a855f7;
+  --accent-3: #38bdf8;
+  --accent-3-glow: #22d3ee;
+  --pink: #f472b6;
+  --error: #f87171;
+  --error-bg: rgba(248, 113, 113, 0.1);
+  --success: #34d399;
+
+  --stage-new: #38bdf8;
+  --stage-screening: #a78bfa;
+  --stage-interview: #818cf8;
+  --stage-offer: #fbbf24;
+  --stage-hired: #34d399;
+  --stage-rejected: #64748b;
+
+  /* indigo-500 -> purple-500 -> cyan-500 */
+  --gradient-primary: linear-gradient(90deg, #6366f1, #a855f7, #06b6d4);
+  --glow-primary: 0 0 25px rgba(99, 102, 241, 0.5);
+  --glow-strong: 0 0 32px rgba(99, 102, 241, 0.6);
+  --glass-shadow: none;
+  --ambient-1: rgba(99, 102, 241, 0.14);
+  --ambient-2: rgba(168, 85, 247, 0.12);
+  --ambient-3: rgba(34, 211, 238, 0.1);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+  }
+}
+
+@utility glass {
+  background-color: color-mix(in oklab, var(--surface-lowest) 80%, transparent);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  box-shadow: var(--glass-shadow);
+}
+
+@utility glass-card {
+  background-color: color-mix(in oklab, var(--surface) 80%, transparent);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  box-shadow: var(--glass-shadow);
+}
+
+@utility bg-gradient-brand {
+  background-image: var(--gradient-primary);
+}
+
+@utility text-gradient-brand {
+  background-image: var(--gradient-primary);
+  background-clip: text;
+  color: transparent;
+}
+
+@utility glow {
+  box-shadow: var(--glow-primary);
+}
+
+@utility glow-strong {
+  box-shadow: var(--glow-strong);
+}
+
+@utility btn-gradient {
+  background-image: linear-gradient(135deg, #5d5fe7, #7948c2);
+  box-shadow: 0 2px 10px color-mix(in srgb, #5d5fe7 22%, transparent);
+  &:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 3px 14px color-mix(in srgb, #5d5fe7 32%, transparent);
+  }
+}
+
+@utility gradient-border {
+  border: 1px solid transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(
+        135deg,
+        color-mix(in oklab, var(--primary-container) 60%, transparent),
+        color-mix(in oklab, var(--accent-2) 30%, transparent),
+        color-mix(in oklab, var(--accent-3) 50%, transparent)
+      )
+      border-box;
+}
+
+@utility nav-active {
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--primary) 20%, transparent),
+    transparent
+  );
+  border: 1px solid color-mix(in oklab, var(--primary) 30%, transparent);
+}
+
+@utility label-caps {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
