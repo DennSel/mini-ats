@@ -144,7 +144,7 @@ export function AdminPage() {
   return (
     <div className="space-y-4">
       <div className="glass flex flex-col gap-2 rounded-2xl p-2.5">
-        {/* Flikar: Staplas lodrätt på mindre skärmar (flex-col), horisontellt på xl (xl:flex-row) */}
+        {/* Tabs: stacked vertically on smaller screens (flex-col), horizontal on xl (xl:flex-row) */}
         <div className="flex shrink-0 gap-1">
           {(
             [
@@ -168,10 +168,10 @@ export function AdminPage() {
           ))}
         </div>
 
-        {/* Högersektion: 2x2-grid på mindre skärmar, flex-rad på xl */}
+        {/* Right section: 2x2 grid on smaller screens, flex row on xl */}
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            {/* 1. Roll-filter */}
+            {/* 1. Role filter */}
             {tab === "users" && (
               <Select value={roleFilter} onValueChange={setRoleFilter}>
                 <SelectTrigger
@@ -192,7 +192,7 @@ export function AdminPage() {
               </Select>
             )}
 
-            {/* 2. Organisations-filter */}
+            {/* 2. Organisation filter */}
             {tab === "users" ? (
               <Select value={orgFilter} onValueChange={setOrgFilter}>
                 <SelectTrigger
@@ -213,7 +213,7 @@ export function AdminPage() {
               </Select>
             ) : null}
 
-            {/* 3. Sökfält */}
+            {/* 3. Search field */}
             <div className="relative min-w-9 flex-1 basis-24">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-auto -translate-y-1/2 text-faint" />
               <input
@@ -225,7 +225,7 @@ export function AdminPage() {
               />
             </div>
 
-            {/* 4. Skapa användare-knapp */}
+            {/* 4. Create user button */}
             <Button
               variant="gradient"
               className="shrink-0"

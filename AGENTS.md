@@ -18,3 +18,7 @@
 - Colors are design tokens in `src/styles.css` (`:root` light, `.dark` dark default); components never hardcode colors. Why: both themes must share identical components.
 - Permissions are checked only via `can(user, permission)` in `src/lib/ats-logic.ts` (exposed as `can` on the store); UI hides/disables actions with it. Why: one place to change role rules when a backend arrives.
 - Job access per member: `User.jobIds` (undefined = all; owners/admins always all), applied only via `visibleJobs`/`visibleCandidates` in `ats-logic.ts`, exposed as `orgJobs`/`orgCandidates` on the store. Why: pages never filter by job access themselves.
+
+## Conventions
+
+- Code comments are always written in English. UI copy, labels, aria-labels and other user-facing strings stay in Swedish (the product language).

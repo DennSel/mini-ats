@@ -59,7 +59,7 @@ export interface Job {
 export interface Candidate {
   id: string;
   orgId: string;
-  /** null = vilande (sparad, inte kopplad till något jobb) */
+  /** null = dormant (saved, not attached to any job) */
   jobId: string | null;
   name: string;
   email: string;

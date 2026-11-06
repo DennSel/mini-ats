@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Faller om hemligheter refereras utanför serverfiler.
+# Fails if secrets are referenced outside server-only files.
 set -u
 bad=$(grep -rnE "SERVICE_ROLE|service_role" src \
   --include=*.ts --include=*.tsx \
