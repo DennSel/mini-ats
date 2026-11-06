@@ -64,7 +64,7 @@ export function normalizeUrl(raw: string): string {
   return raw.trim().replace(/^https?:\/\//i, (m) => m.toLowerCase());
 }
 
-export interface LogoProps extends React.HTMLAttributes<HTMLDivElement> {}
+export type LogoProps = React.HTMLAttributes<HTMLDivElement>;
 
 export function Logo({ className, ...props }: LogoProps) {
   return (
@@ -288,7 +288,8 @@ export function WithSidePanel({
 }
 
 // Page UI state that survives navigating away and back (module-level, per key).
-const uiStore: Map<string, unknown> = ((globalThis as any).__atsUiStore ??= new Map());
+const uiGlobal = globalThis as unknown as { __atsUiStore?: Map<string, unknown> };
+const uiStore: Map<string, unknown> = (uiGlobal.__atsUiStore ??= new Map());
 export function usePersistentState<T>(key: string, initial: T) {
   const [v, setV] = React.useState<T>(() => (uiStore.has(key) ? (uiStore.get(key) as T) : initial));
   const set = React.useCallback(
