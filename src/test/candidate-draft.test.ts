@@ -4,12 +4,12 @@ import { candidateSchema } from "@/components/board/CandidateDialog";
 
 describe("candidate unsaved changes", () => {
   it("detects unsaved notes and ignores unchanged empty interview fields", () => {
-    const saved = { note: "Anteckning" };
+    const saved = { note: "a note" };
     expect(
-      hasCandidateDraftChanges({ note: "Ändring", interviewAt: "", interviewLink: "" }, saved),
+      hasCandidateDraftChanges({ note: "an edit", interviewAt: "", interviewLink: "" }, saved),
     ).toBe(true);
     expect(
-      hasCandidateDraftChanges({ note: "Anteckning", interviewAt: "", interviewLink: "" }, saved),
+      hasCandidateDraftChanges({ note: "a note", interviewAt: "", interviewLink: "" }, saved),
     ).toBe(false);
   });
   it("detects changes to interview date and meeting link", () => {

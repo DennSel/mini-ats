@@ -22,4 +22,4 @@
 
 ## Conventions
 
-- Code comments are always written in English. UI copy, labels, aria-labels and other user-facing strings stay in Swedish (the product language).
+- Everything in the project is written in English except the UI: code comments, commit messages, docs, issues and pull requests. UI copy, labels, aria-labels and other user-facing strings stay in Swedish (the product language).
