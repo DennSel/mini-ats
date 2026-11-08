@@ -57,17 +57,22 @@ tag. All accounts and data in it are invented; never reuse those passwords anywh
 ## Environment variables
 
 Copy `.env.example` to `.env` (ignored by git). The app runs without them today; they become
-required as the Supabase integration lands.
+required as the Supabase integration lands. Only public values ever live in files:
 
-| Variable                    | Scope           | Purpose                                                                    |
-| --------------------------- | --------------- | -------------------------------------------------------------------------- |
-| `VITE_SUPABASE_URL`         | client          | Supabase project URL (public)                                              |
-| `VITE_SUPABASE_ANON_KEY`    | client          | publishable/anon key (public; access is restricted by row level security)  |
-| `SUPABASE_SERVICE_ROLE_KEY` | **server only** | bypasses row level security; used by server functions that manage accounts |
+| Variable                        | Scope  | Purpose                                                              |
+| ------------------------------- | ------ | -------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`             | client | Supabase project URL (public)                                        |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | client | publishable key (public; access is restricted by row level security) |
 
-Rules for the service role key: it must never have a `VITE_` prefix (that would ship it to
-browsers) and may only be referenced from files named `*.server.ts` or `*.functions.ts`. In
-deployment it is set as a platform secret (Lovable project settings), not committed.
+The secret key (service role / `sb_secret_…`) bypasses row level security. It exists only in
+Supabase and in Lovable's project settings — never on a local machine, in this repo, in code
+or in a chat. If server functions ever need it, they read it from platform secrets at
+runtime; it is never bundled into the client.
+
+Secrets hygiene: before each commit, run `git status` and `git diff --staged` (no `.env`, no
+unexpected `.gitignore` changes, no long key-like strings). Push protection is enabled on
+GitHub. If a secret leaks anyway, rotate it in Supabase — create a new key, revoke the old
+one — because removing it from the code is not enough; git history keeps it.
 
 ## Data model
 
