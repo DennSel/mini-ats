@@ -128,3 +128,15 @@ export function initials(name: string) {
     .map((p) => p[0]?.toUpperCase())
     .join("");
 }
+
+export type InterviewUrgency = "past" | "soon" | "week" | "later";
+
+/** soon = within 2 days, week = within 7 days, later = further away, past = already passed */
+export function interviewUrgency(at: string, now: Date = new Date()): InterviewUrgency {
+  const diff = new Date(at).getTime() - now.getTime();
+  const day = 86_400_000;
+  if (diff < 0) return "past";
+  if (diff <= 2 * day) return "soon";
+  if (diff <= 7 * day) return "week";
+  return "later";
+}

@@ -92,7 +92,7 @@ export function TeamPage() {
 
   const setJobAccess = (id: string, jobIds: string[] | undefined) => {
     updateUser(id, { jobIds });
-    toast.success("Jobbåtkomsten uppdaterades");
+    toast.success("Tjänsteåtkomsten uppdaterades");
   };
 
   const inviteForm = (
@@ -120,7 +120,7 @@ export function TeamPage() {
         />
       </div>
       <div>
-        <span className={labelClass}>Jobbåtkomst</span>
+        <span className={labelClass}>Tjänsteåtkomst</span>
         <JobAccessMenu
           orgRole={inviteRole}
           jobIds={inviteJobs}
@@ -143,11 +143,11 @@ export function TeamPage() {
     >
       <div>
         <div className="min-w-0">
-          <div className="glass mb-3 flex items-center gap-2 rounded-2xl p-2 pl-4">
+          <div className="glass mb-3 flex flex-col gap-2 rounded-2xl p-2 pl-4 sm:flex-row sm:items-center">
             <p className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">
               Medarbetare i <span className="font-semibold text-foreground">{activeOrg?.name}</span>
             </p>
-            <Button variant="gradient" onClick={() => setOpen(true)}>
+            <Button variant="gradient" className="w-full sm:w-auto" onClick={() => setOpen(true)}>
               <UserPlus /> Bjud in medarbetare
             </Button>
           </div>

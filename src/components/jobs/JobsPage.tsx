@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Briefcase, Kanban, Lock, MapPin, Pencil, Plus, Search, Unlock } from "lucide-react";
+import { Briefcase, Kanban, Lock, MapPin, Pencil, Plus, Unlock } from "lucide-react";
 import { useAts } from "@/lib/ats-store";
 import type { Job } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
-import { StatusPill } from "@/components/shared";
+import { SearchInput, StatusPill, ViewLabel } from "@/components/shared";
 import { cn } from "@/lib/utils";
 import { JobDialog } from "./JobDialog";
 import { WithSidePanel, useIsDesktop, usePersistentState } from "@/components/shared";
@@ -65,7 +65,7 @@ export function JobsPage() {
       )}
       <Button size="sm" variant="outline" asChild className="border-primary/30 text-primary">
         <Link to="/board" search={{ job: j.id, q: "" }}>
-          <Kanban /> Visa i pipeline
+          <Kanban /> Visa i flöde
         </Link>
       </Button>
     </div>
@@ -83,7 +83,8 @@ export function JobsPage() {
       onClose={closeDialog}
     >
       <div>
-        <div className="glass flex flex-col gap-3 rounded-2xl p-2 sm:flex-row sm:items-center">
+        <div className="glass flex flex-col gap-3 rounded-2xl p-2 pl-4 sm:flex-row sm:items-center">
+          <ViewLabel className="sm:pr-1">Tjänster</ViewLabel>
           <div className="flex gap-1 overflow-x-auto no-scrollbar">
             {(
               [
@@ -107,15 +108,12 @@ export function JobsPage() {
               </button>
             ))}
           </div>
-          <div className="relative min-w-10 shrink sm:ml-auto sm:w-72">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Sök tjänst…"
-              className="h-9 w-full rounded-xl border border-border bg-surface-low pl-9 pr-3 text-[13px] outline-none placeholder:text-faint focus:border-primary/60"
-            />
-          </div>
+          <SearchInput
+            value={q}
+            onChange={setQ}
+            placeholder="Sök tjänst…"
+            className="sm:ml-auto sm:w-72 sm:flex-none sm:max-w-none"
+          />
           {canJobs && (
             <Button variant="gradient" onClick={() => setDialog({ open: true, job: null })}>
               <Plus className="icon-rotate" /> Ny tjänst

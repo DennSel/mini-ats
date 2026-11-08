@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Building2, Check, Pencil, Plus, Search, Trash2, UserPlus } from "lucide-react";
+import { Building2, Check, Pencil, Plus, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useAts } from "@/lib/ats-store";
 import { isLastOwner } from "@/lib/ats-logic";
@@ -38,6 +38,8 @@ import {
   useIsDesktop,
   usePersistentState,
   FieldError,
+  SearchInput,
+  ViewLabel,
   inputClass,
   labelClass,
 } from "@/components/shared";
@@ -143,7 +145,8 @@ export function AdminPage() {
 
   return (
     <div className="space-y-4">
-      <div className="glass flex flex-col gap-2 rounded-2xl p-2.5">
+      <div className="glass flex flex-col gap-2 rounded-2xl p-2.5 pl-4">
+        <ViewLabel>Admin</ViewLabel>
         {/* Tabs: stacked vertically on smaller screens (flex-col), horizontal on xl (xl:flex-row) */}
         <div className="flex shrink-0 gap-1">
           {(
@@ -171,7 +174,7 @@ export function AdminPage() {
         {/* Right section: 2x2 grid on smaller screens, flex row on xl */}
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            {/* 1. Role filter */}
+            {/* 1. Roll-filter */}
             {tab === "users" && (
               <Select value={roleFilter} onValueChange={setRoleFilter}>
                 <SelectTrigger
@@ -192,7 +195,7 @@ export function AdminPage() {
               </Select>
             )}
 
-            {/* 2. Organisation filter */}
+            {/* 2. Organisations-filter */}
             {tab === "users" ? (
               <Select value={orgFilter} onValueChange={setOrgFilter}>
                 <SelectTrigger
@@ -214,16 +217,12 @@ export function AdminPage() {
             ) : null}
 
             {/* 3. Search field */}
-            <div className="relative min-w-9 flex-1 basis-24">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-auto -translate-y-1/2 text-faint" />
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Sök…"
-                aria-label="Sök"
-                className="h-9 w-full min-w-0 rounded-xl border border-border bg-surface-low pl-9 pr-3 text-[13px] outline-none placeholder:text-faint focus:border-primary/60"
-              />
-            </div>
+            <SearchInput
+              value={q}
+              onChange={setQ}
+              placeholder="Sök…"
+              className="min-w-9 basis-24 md:max-w-none"
+            />
 
             {/* 4. Create user button */}
             <Button
@@ -408,7 +407,7 @@ export function AdminPage() {
               <AlertDialogHeader>
                 <AlertDialogTitle className="font-display">Ta bort organisation?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  {removeOrg?.name} och alla dess jobb och kandidater tas bort permanent.
+                  {removeOrg?.name} och alla dess tjänster och kandidater tas bort permanent.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

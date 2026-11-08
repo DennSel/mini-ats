@@ -6,6 +6,8 @@ import { AdminPage } from "@/components/admin/AdminPage";
 export const Route = createFileRoute("/_app/admin")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "Admin – KandSys" },
       { name: "description", content: "Användare och organisationer." },
       { property: "og:title", content: "Admin – KandSys" },

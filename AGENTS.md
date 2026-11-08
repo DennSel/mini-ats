@@ -13,6 +13,7 @@
 
 ## Architecture
 
+- Candidate close confirmations share `UnsavedCandidateDialog`; each editor owns validation and drafts, and the details panel registers its guarded close callback with its wrapper so desktop and mobile use the same guard.
 - All app data lives in an in-memory React context (`src/lib/ats-store.tsx`) seeded from `src/lib/mock-data.ts`; pure rules live in `src/lib/ats-logic.ts` so they can be unit-tested. Why: step 1 is UI-only, a backend replaces the store later.
 - Authenticated pages sit under the pathless `_app` layout, which redirects to /login when no user is set. Why: one guard for every signed-in page.
 - Colors are design tokens in `src/styles.css` (`:root` light, `.dark` dark default); components never hardcode colors. Why: both themes must share identical components.

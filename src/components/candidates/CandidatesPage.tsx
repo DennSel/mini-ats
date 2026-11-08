@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { usePersistentState } from "@/components/shared";
-import { Plus, Search, Send } from "lucide-react";
+import { Plus, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useAts } from "@/lib/ats-store";
 import { STAGES, type Candidate } from "@/lib/mock-data";
@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, stageStyles } from "@/components/shared";
+import { Avatar, SearchInput, ViewLabel, stageStyles } from "@/components/shared";
 import { cn } from "@/lib/utils";
 import { POOL, WithCandidatePanel, useIsDesktop } from "@/components/board/CandidatePanel";
 import { CandidateDialog } from "@/components/board/CandidateDialog";
@@ -102,11 +102,12 @@ export function CandidatesPage() {
         if (c) setDialog({ open: true, candidate: c });
       }}
     >
-      <div className="glass flex flex-col gap-2 rounded-2xl p-2 md:flex-row md:items-center">
+      <div className="glass flex flex-col gap-2 rounded-2xl p-2 pl-4 md:flex-row md:items-center">
+        <ViewLabel className="md:pr-1">Kandidater</ViewLabel>
         <Select value={jobFilter} onValueChange={setJobFilter}>
           <SelectTrigger
             className="h-9 rounded-xl border-border bg-surface-low md:w-64"
-            aria-label="Filtrera på jobb"
+            aria-label="Filtrera på tjänst"
           >
             <SelectValue />
           </SelectTrigger>
@@ -135,16 +136,12 @@ export function CandidatesPage() {
             <SelectItem value="stage">Stadie</SelectItem>
           </SelectContent>
         </Select>
-        <div className="relative min-w-10 flex-1 shrink md:max-w-xs">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Sök på namn eller e-post…"
-            aria-label="Sök kandidat"
-            className="h-9 w-full rounded-xl border border-border bg-surface-low pl-9 pr-3 text-[13px] outline-none placeholder:text-faint focus:border-primary/60"
-          />
-        </div>
+        <SearchInput
+          value={q}
+          onChange={setQ}
+          placeholder="Sök på namn eller e-post…"
+          aria-label="Sök kandidat"
+        />
         {canManage && (
           <Button
             variant="gradient"
@@ -210,7 +207,7 @@ export function CandidatesPage() {
                       className="border-primary/30 text-primary"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <Send /> Skicka till jobb
+                      <Send /> Skicka till tjänst
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>

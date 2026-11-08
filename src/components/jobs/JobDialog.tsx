@@ -154,7 +154,7 @@ export function JobDialog({
               Avbryt
             </Button>
             <Button type="submit" variant="gradient">
-              <Check /> Spara jobb
+              <Check /> Spara tjänst
             </Button>
           </div>
         </form>
@@ -165,13 +165,13 @@ export function JobDialog({
       <DialogContent className="max-h-[92vh] overflow-y-auto rounded-2xl border-border bg-surface sm:max-w-xl">
         <DialogHeader className="text-left">
           <div className="flex items-center gap-2 label-caps text-accent-3">
-            <FilePlus2 className="h-3.5 w-3.5" /> {job ? "Redigera jobb" : "Nytt jobb"}
+            <FilePlus2 className="h-3.5 w-3.5" /> {job ? "Redigera tjänst" : "Ny tjänst"}
           </div>
           <DialogTitle className="font-display text-xl font-bold">
-            {job ? "Redigera jobb" : "Skapa nytt jobb"}
+            {job ? "Redigera tjänst" : "Skapa ny tjänst"}
           </DialogTitle>
           <DialogDescription className="text-[12px]">
-            Fyll i grundläggande information för jobbet.
+            Fyll i grundläggande information för tjänsten.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
@@ -255,7 +255,7 @@ export function JobDialog({
               Avbryt
             </Button>
             <Button type="submit" variant="gradient">
-              <Check /> Spara jobb
+              <Check /> Spara tjänst
             </Button>
           </div>
         </form>

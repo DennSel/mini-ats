@@ -19,7 +19,7 @@ import {
   verticalListSortingStrategy,
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
-import { Plus, Search, X } from "lucide-react";
+import { BrushCleaning, Plus } from "lucide-react";
 import { useAts } from "@/lib/ats-store";
 import { filterCandidates } from "@/lib/ats-logic";
 import { STAGES, type Candidate, type Stage } from "@/lib/mock-data";
@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { stageStyles } from "@/components/shared";
+import { SearchInput, ViewLabel, stageStyles } from "@/components/shared";
 import { cn } from "@/lib/utils";
 import { CandidateCardView, SortableCandidateCard } from "./CandidateCard";
 import { WithCandidatePanel, useIsDesktop } from "./CandidatePanel";
@@ -139,19 +139,20 @@ export function BoardPage({ job, q }: { job: string; q: string }) {
       }}
     >
       <div className="flex h-full flex-col">
-        <div className="glass flex flex-col gap-2 rounded-2xl p-2 md:flex-row md:items-center">
+        <div className="glass flex flex-col gap-2 rounded-2xl p-2 pl-4 md:flex-row md:items-center">
+          <ViewLabel className="md:pr-1">Kandidatflöde</ViewLabel>
           <Select
             value={jobFilter || ALL}
             onValueChange={(v) => navigate({ search: (p) => ({ ...p, job: v === ALL ? "" : v }) })}
           >
             <SelectTrigger
               className="h-9 rounded-xl border-border bg-surface-low md:w-60"
-              aria-label="Filtrera på jobb"
+              aria-label="Filtrera på tjänst"
             >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={ALL}>Alla jobb</SelectItem>
+              <SelectItem value={ALL}>Alla tjänster</SelectItem>
               {orgJobs.map((j) => (
                 <SelectItem key={j.id} value={j.id}>
                   {j.title}
@@ -159,31 +160,25 @@ export function BoardPage({ job, q }: { job: string; q: string }) {
               ))}
             </SelectContent>
           </Select>
-          <div className="relative min-w-10 flex-1 shrink md:max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
-            <input
-              value={qInput}
-              onChange={(e) => setQInput(e.target.value)}
-              placeholder="Sök kandidat på namn…"
-              aria-label="Sök kandidat"
-              className="h-9 w-full rounded-xl border border-border bg-surface-low pl-9 pr-3 text-[13px] outline-none placeholder:text-faint focus:border-primary/60"
-            />
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0"
-            aria-label="Rensa filter"
-            title="Rensa"
-            disabled={!hasFilter && !qInput}
-            onClick={() => {
-              setQInput("");
-              navigate({ search: { job: "", q: "" } });
-            }}
-          >
-            <X />
-          </Button>
+          <SearchInput
+            value={qInput}
+            onChange={setQInput}
+            placeholder="Sök kandidat på namn…"
+            aria-label="Sök kandidat"
+          />
           <div className="flex gap-2 md:ml-auto">
+            <Button
+              variant="outline"
+              className="shrink-0 border-border text-muted-foreground hover:text-foreground"
+              aria-label="Rensa filter"
+              disabled={!hasFilter && !qInput}
+              onClick={() => {
+                setQInput("");
+                navigate({ search: { job: "", q: "" } });
+              }}
+            >
+              <BrushCleaning /> Rensa
+            </Button>
             {canManage && (
               <Button
                 variant="gradient"

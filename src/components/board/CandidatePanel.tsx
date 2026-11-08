@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   CalendarClock,
   Video,
@@ -45,6 +45,9 @@ import { cn } from "@/lib/utils";
 import { useAts } from "@/lib/ats-store";
 import { STAGES, type Stage } from "@/lib/mock-data";
 
+import { UnsavedCandidateDialog } from "./UnsavedCandidateDialog";
+import { hasCandidateDraftChanges } from "@/lib/candidate-draft";
+
 export const POOL = "__pool";
 
 export function useIsDesktop() {
@@ -79,6 +82,11 @@ export function WithCandidatePanel({
   children: ReactNode;
 }) {
   const desktop = useIsDesktop();
+  const closeGuard = useRef<(() => void) | null>(null);
+  const registerClose = useCallback((close: (() => void) | null) => {
+    closeGuard.current = close;
+  }, []);
+  const requestClose = () => (closeGuard.current ? closeGuard.current() : onClose());
   const { candidates } = useAts();
   const exists = candidates.some((c) => c.id === candidateId);
   const open = !!candidateId && exists;
@@ -101,19 +109,30 @@ export function WithCandidatePanel({
       {desktop && !side && open && (
         <aside className="glass-card sticky top-20 max-h-[calc(100vh-6rem)] w-[400px] shrink-0 overflow-y-auto rounded-2xl animate-in fade-in slide-in-from-right-4">
           <button
-            onClick={onClose}
+            onClick={requestClose}
             aria-label="Stäng"
             className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-lg text-faint transition hover:bg-surface-high hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>
-          <CandidateDetails candidateId={candidateId} onClose={onClose} onEdit={onEdit} inline />
+          <CandidateDetails
+            candidateId={candidateId}
+            onClose={onClose}
+            onEdit={onEdit}
+            registerClose={registerClose}
+            inline
+          />
         </aside>
       )}
       {!desktop && (
-        <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
+        <Sheet open={open} onOpenChange={(o) => !o && requestClose()}>
           <SheetContent className="w-full overflow-y-auto border-border bg-surface-lowest p-0 sm:max-w-md">
-            <CandidateDetails candidateId={candidateId} onClose={onClose} onEdit={onEdit} />
+            <CandidateDetails
+              candidateId={candidateId}
+              onClose={onClose}
+              onEdit={onEdit}
+              registerClose={registerClose}
+            />
           </SheetContent>
         </Sheet>
       )}
@@ -126,14 +145,17 @@ function CandidateDetails({
   onClose,
   onEdit,
   inline,
+  registerClose,
 }: {
   candidateId: string | null;
   onClose: () => void;
   onEdit: () => void;
   inline?: boolean;
+  registerClose: (close: (() => void) | null) => void;
 }) {
   const {
     candidates,
+    users,
     jobs,
     activeOrgId,
     updateCandidate,
@@ -148,6 +170,7 @@ function CandidateDetails({
   const c = candidates.find((x) => x.id === candidateId) ?? null;
   const job = jobs.find((j) => j.id === c?.jobId);
   const [note, setNote] = useState("");
+  const [confirmClose, setConfirmClose] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [linkLabel, setLinkLabel] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
@@ -172,6 +195,21 @@ function CandidateDetails({
     setLinkError(undefined);
   }, [c?.id]);
 
+  const dirty =
+    !!c &&
+    hasCandidateDraftChanges(
+      { note, interviewAt: ivAt, interviewLink: ivLink },
+      { note: c.note, interviewAt: c.interviewAt, interviewLink: c.interviewLink },
+    );
+  const hasPendingLink = !!(linkLabel.trim() || linkUrl.trim());
+  useEffect(() => {
+    registerClose(() => {
+      if (dirty || hasPendingLink) setConfirmClose(true);
+      else onClose();
+    });
+    return () => registerClose(null);
+  }, [dirty, hasPendingLink, onClose, registerClose]);
+
   if (!c) return null;
   const Title = inline ? "h2" : SheetTitle;
   const Desc = inline ? "p" : SheetDescription;
@@ -194,8 +232,45 @@ function CandidateDetails({
     setAddingLink(false);
   };
 
+  const saveAndClose = () => {
+    const link = normalizeUrl(ivLink);
+    if (link && !/^https?:\/\/[^\s.]+\.[^\s]+$/.test(link)) {
+      setIvError("Ange en giltig adress som börjar med https://");
+      setConfirmClose(false);
+      return;
+    }
+    if (hasPendingLink) {
+      const url = normalizeUrl(linkUrl);
+      if (!/^https?:\/\/[^\s.]+\.[^\s]+$/.test(url) || linkLabel.trim().length > 40) {
+        setLinkError("Ange en giltig adress och ett namn på max 40 tecken");
+        setConfirmClose(false);
+        return;
+      }
+      addLink(c.id, linkLabel.trim() || "Länk", url);
+    }
+    updateCandidate(c.id, { note, interviewAt: ivAt, interviewLink: link });
+    setConfirmClose(false);
+    onClose();
+    toast.success("Ändringarna sparades");
+  };
+
   return (
     <div className="flex flex-col gap-6 p-6">
+      <UnsavedCandidateDialog
+        open={confirmClose}
+        onOpenChange={setConfirmClose}
+        onSave={saveAndClose}
+        onDiscard={() => {
+          setNote(c.note);
+          setIvAt(c.interviewAt ?? "");
+          setIvLink(c.interviewLink ?? "");
+          setAddingLink(false);
+          setLinkLabel("");
+          setLinkUrl("");
+          setConfirmClose(false);
+          onClose();
+        }}
+      />
       <div className="flex items-center gap-4 pr-8">
         <Avatar name={c.name} size="lg" />
         <div className="min-w-0">
@@ -203,19 +278,26 @@ function CandidateDetails({
           <Desc className="truncate text-[12px] text-muted-foreground">
             {job?.title ?? "Vilande"}
           </Desc>
+          <p className="mt-0.5 truncate text-[11px] text-faint">
+            Tillagd {c.createdAt}
+            {(() => {
+              const by = users.find((u) => u.id === c.createdBy);
+              return by ? ` av ${by.name}` : "";
+            })()}
+          </p>
         </div>
       </div>
 
       <div className={cn("grid gap-3", c.jobId && "grid-cols-2")}>
         <div>
-          <span className={labelClass}>Jobb</span>
+          <span className={labelClass}>Tjänst</span>
           <Select
             value={c.jobId ?? POOL}
             disabled={!canManage}
             onValueChange={(v) => {
               assignCandidate(c.id, v === POOL ? null : v);
               toast.success(
-                v === POOL ? "Kandidaten är nu vilande" : "Kandidaten skickades till jobbet",
+                v === POOL ? "Kandidaten är nu vilande" : "Kandidaten skickades till tjänsten",
               );
             }}
           >

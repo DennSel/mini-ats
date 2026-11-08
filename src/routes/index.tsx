@@ -4,10 +4,12 @@ import { useAts } from "@/lib/ats-store";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
       { title: "KandSys" },
-      { name: "description", content: "KandSys – hantera jobb och kandidater." },
+      { name: "description", content: "KandSys – hantera tjänster och kandidater." },
       { property: "og:title", content: "KandSys" },
-      { property: "og:description", content: "KandSys – hantera jobb och kandidater." },
+      { property: "og:description", content: "KandSys – hantera tjänster och kandidater." },
     ],
   }),
   component: Index,

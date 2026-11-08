@@ -37,14 +37,14 @@ export function JobAccessMenu({
         className={btn + " disabled:opacity-70"}
       >
         <span className="flex min-w-0 items-center gap-1.5">
-          <Briefcase className="shrink-0" /> <span className="truncate">Alla jobb (ägare)</span>
+          <Briefcase className="shrink-0" /> <span className="truncate">Alla tjänster (ägare)</span>
         </span>
       </Button>
     );
   }
   const selected = jobIds ?? jobs.map((j) => j.id);
   const all = !jobIds;
-  const label = all ? "Alla jobb" : `${selected.length} av ${jobs.length} jobb`;
+  const label = all ? "Alla tjänster" : `${selected.length} av ${jobs.length} tjänster`;
   const toggle = (id: string, on: boolean) => {
     const next = on ? [...selected, id] : selected.filter((x) => x !== id);
     onChange(next.length === jobs.length ? undefined : next);
@@ -61,14 +61,14 @@ export function JobAccessMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
         <DropdownMenuLabel className="text-[11px]">
-          {name ? `Jobb ${name.split(" ")[0]} har tillgång till` : "Jobb med tillgång"}
+          {name ? `Tjänster ${name.split(" ")[0]} har tillgång till` : "Tjänster med tillgång"}
         </DropdownMenuLabel>
         <DropdownMenuCheckboxItem
           checked={all}
           onSelect={(e) => e.preventDefault()}
           onCheckedChange={() => onChange(all ? [] : undefined)}
         >
-          Alla jobb
+          Alla tjänster
         </DropdownMenuCheckboxItem>
         <DropdownMenuSeparator />
         {jobs.map((j) => (

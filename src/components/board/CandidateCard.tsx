@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { interviewUrgency } from "@/lib/ats-logic";
 import { STAGES, type Candidate, type Stage } from "@/lib/mock-data";
 
 export function CandidateCardView({
@@ -69,11 +70,21 @@ export function CandidateCardView({
       </div>
       <div className="mt-2.5 flex items-center justify-between">
         {candidate.interviewAt ? (
-          <span className="flex items-center gap-1 font-mono text-[10px] text-primary">
+          <span
+            className={cn(
+              "flex items-center gap-1 font-mono text-[10px]",
+              {
+                past: "text-faint line-through",
+                soon: "text-error",
+                week: "text-stage-offer",
+                later: "text-muted-foreground",
+              }[interviewUrgency(candidate.interviewAt)],
+            )}
+          >
             <CalendarClock className="h-3 w-3" /> {candidate.interviewAt.replace("T", " ")}
           </span>
         ) : (
-          <span className="font-mono text-[10px] text-faint">{candidate.createdAt}</span>
+          <span className="text-[10px] text-faint">Ingen intervju bokad</span>
         )}
         {candidate.linkedin && (
           <a

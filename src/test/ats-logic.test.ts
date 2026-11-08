@@ -7,6 +7,7 @@ import {
   isLastOwner,
   filterCandidates,
   homePathFor,
+  interviewUrgency,
   moveCandidate,
 } from "@/lib/ats-logic";
 import { seedCandidates, seedUsers, type User } from "@/lib/mock-data";
@@ -105,4 +106,13 @@ describe("job access", () => {
     expect(vis.every((c) => c.jobId === null || c.jobId === "job-n1")).toBe(true);
     expect(vis.some((c) => c.jobId === null)).toBe(true);
   });
+});
+
+describe("interviewUrgency", () => {
+  const now = new Date("2026-11-08T12:00");
+  it("past", () => expect(interviewUrgency("2026-11-08T11:00", now)).toBe("past"));
+  it("within two days is soon", () =>
+    expect(interviewUrgency("2026-11-10T11:00", now)).toBe("soon"));
+  it("within a week", () => expect(interviewUrgency("2026-11-13T12:00", now)).toBe("week"));
+  it("later than a week", () => expect(interviewUrgency("2026-11-20T12:00", now)).toBe("later"));
 });

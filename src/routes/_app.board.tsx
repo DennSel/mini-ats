@@ -12,9 +12,11 @@ export const Route = createFileRoute("/_app/board")({
   validateSearch: zodValidator(searchSchema),
   head: () => ({
     meta: [
-      { title: "Pipeline – KandSys" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+      { title: "Flöde – KandSys" },
       { name: "description", content: "Kandidater per rekryteringsstadie." },
-      { property: "og:title", content: "Pipeline – KandSys" },
+      { property: "og:title", content: "Flöde – KandSys" },
       { property: "og:description", content: "Kandidater per rekryteringsstadie." },
     ],
   }),

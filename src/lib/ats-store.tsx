@@ -24,7 +24,10 @@ const uid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
 const today = () => new Date().toISOString().slice(0, 10);
 
 export type JobInput = Omit<Job, "id" | "orgId" | "createdAt">;
-export type CandidateInput = Omit<Candidate, "id" | "orgId" | "createdAt" | "stage" | "links"> & {
+export type CandidateInput = Omit<
+  Candidate,
+  "id" | "orgId" | "createdAt" | "createdBy" | "stage" | "links"
+> & {
   stage?: Stage;
   links?: Candidate["links"];
 };
@@ -135,6 +138,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
             id: uid("cand"),
             orgId: activeOrgId,
             createdAt: today(),
+            createdBy: currentUser?.id,
           },
         ]);
       },

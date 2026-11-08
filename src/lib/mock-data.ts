@@ -6,19 +6,19 @@ export const ORG_ROLES: { id: OrgRole; label: string; description: string }[] = 
   {
     id: "owner",
     label: "Ägare",
-    description: "Allt, inkl. bjuda in/ta bort medarbetare och styra jobbåtkomst",
+    description: "Allt, inkl. bjuda in/ta bort medarbetare och styra tjänsteåtkomst",
   },
   {
     id: "recruiter",
     label: "Rekryterare",
-    description: "Skapa/redigera jobb och kandidater, flytta och anteckna",
+    description: "Skapa/redigera tjänster och kandidater, flytta och anteckna",
   },
   {
     id: "reviewer",
     label: "Bedömare",
     description: "Flytta kandidater mellan steg och skriva anteckningar",
   },
-  { id: "viewer", label: "Läsare", description: "Se jobb och kandidater" },
+  { id: "viewer", label: "Läsare", description: "Se tjänster och kandidater" },
 ];
 
 export interface CandidateLink {
@@ -72,6 +72,8 @@ export interface Candidate {
   interviewLink?: string;
   stage: Stage;
   createdAt: string;
+  /** User id of the member who added the candidate */
+  createdBy?: string | undefined;
 }
 
 export const STAGES: { id: Stage; label: string }[] = [
@@ -271,6 +273,7 @@ function buildCandidates(orgId: string, names: string[], jobIds: string[], domai
       note: "",
       stage: dormant ? "new" : stageCycle[i % stageCycle.length]!,
       createdAt: `2026-10-${day}`,
+      createdBy: orgId === "org-nordvik" ? "u-anna" : undefined,
     };
   });
 }

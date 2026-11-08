@@ -15,8 +15,8 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppAdminRouteImport } from './routes/_app.admin'
 import { Route as AppBoardRouteImport } from './routes/_app.board'
 import { Route as AppCandidatesRouteImport } from './routes/_app.candidates'
-import { Route as AppJobsRouteImport } from './routes/_app.jobs'
 import { Route as AppTeamRouteImport } from './routes/_app.team'
+import { Route as AppTjansterRouteImport } from './routes/_app.tjanster'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -47,14 +47,14 @@ const AppCandidatesRoute = AppCandidatesRouteImport.update({
   path: '/candidates',
   getParentRoute: () => AppRoute,
 } as any)
-const AppJobsRoute = AppJobsRouteImport.update({
-  id: '/jobs',
-  path: '/jobs',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppTeamRoute = AppTeamRouteImport.update({
   id: '/team',
   path: '/team',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTjansterRoute = AppTjansterRouteImport.update({
+  id: '/tjanster',
+  path: '/tjanster',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -64,8 +64,8 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AppAdminRoute
   '/board': typeof AppBoardRoute
   '/candidates': typeof AppCandidatesRoute
-  '/jobs': typeof AppJobsRoute
   '/team': typeof AppTeamRoute
+  '/tjanster': typeof AppTjansterRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -73,8 +73,8 @@ export interface FileRoutesByTo {
   '/admin': typeof AppAdminRoute
   '/board': typeof AppBoardRoute
   '/candidates': typeof AppCandidatesRoute
-  '/jobs': typeof AppJobsRoute
   '/team': typeof AppTeamRoute
+  '/tjanster': typeof AppTjansterRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -84,15 +84,16 @@ export interface FileRoutesById {
   '/_app/admin': typeof AppAdminRoute
   '/_app/board': typeof AppBoardRoute
   '/_app/candidates': typeof AppCandidatesRoute
-  '/_app/jobs': typeof AppJobsRoute
   '/_app/team': typeof AppTeamRoute
+  '/_app/tjanster': typeof AppTjansterRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/login' | '/admin' | '/board' | '/candidates' | '/jobs' | '/team'
+    '/' | '/login' | '/admin' | '/board' | '/candidates' | '/team' | '/tjanster'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/admin' | '/board' | '/candidates' | '/jobs' | '/team'
+  to:
+    '/' | '/login' | '/admin' | '/board' | '/candidates' | '/team' | '/tjanster'
   id:
     | '__root__'
     | '/'
@@ -101,8 +102,8 @@ export interface FileRouteTypes {
     | '/_app/admin'
     | '/_app/board'
     | '/_app/candidates'
-    | '/_app/jobs'
     | '/_app/team'
+    | '/_app/tjanster'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -155,18 +156,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCandidatesRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/jobs': {
-      id: '/_app/jobs'
-      path: '/jobs'
-      fullPath: '/jobs'
-      preLoaderRoute: typeof AppJobsRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/team': {
       id: '/_app/team'
       path: '/team'
       fullPath: '/team'
       preLoaderRoute: typeof AppTeamRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/tjanster': {
+      id: '/_app/tjanster'
+      path: '/tjanster'
+      fullPath: '/tjanster'
+      preLoaderRoute: typeof AppTjansterRouteImport
       parentRoute: typeof AppRoute
     }
   }
@@ -176,16 +177,16 @@ interface AppRouteChildren {
   AppAdminRoute: typeof AppAdminRoute
   AppBoardRoute: typeof AppBoardRoute
   AppCandidatesRoute: typeof AppCandidatesRoute
-  AppJobsRoute: typeof AppJobsRoute
   AppTeamRoute: typeof AppTeamRoute
+  AppTjansterRoute: typeof AppTjansterRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppAdminRoute: AppAdminRoute,
   AppBoardRoute: AppBoardRoute,
   AppCandidatesRoute: AppCandidatesRoute,
-  AppJobsRoute: AppJobsRoute,
   AppTeamRoute: AppTeamRoute,
+  AppTjansterRoute: AppTjansterRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)

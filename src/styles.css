@@ -277,3 +277,13 @@
     display: none;
   }
 }
+
+@utility admin-bar {
+  background-image: linear-gradient(
+    90deg,
+    color-mix(in oklab, #7f1d1d 45%, transparent),
+    color-mix(in oklab, #7f1d1d 18%, transparent) 55%,
+    transparent
+  );
+  border-bottom-color: color-mix(in oklab, #b91c1c 35%, transparent);
+}

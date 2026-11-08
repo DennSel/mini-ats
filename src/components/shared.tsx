@@ -1,4 +1,4 @@
-import { Icon, Minus, Plus, Handshake, X, type LucideProps } from "lucide-react";
+import { Icon, Minus, Plus, Handshake, Search, X, type LucideProps } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/ats-logic";
@@ -213,6 +213,59 @@ export const stageStyles: Record<
 export function FieldError({ message }: { message?: string | undefined }) {
   if (!message) return null;
   return <p className="mt-1 text-[11px] font-medium text-error">{message}</p>;
+}
+
+/** Search field with a clear (x) button on the right when it has text. */
+export function SearchInput({
+  value,
+  onChange,
+  placeholder,
+  "aria-label": ariaLabel,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  "aria-label"?: string;
+  className?: string;
+}) {
+  return (
+    <div className={cn("relative min-w-10 flex-1 shrink md:max-w-xs", className)}>
+      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-faint" />
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        aria-label={ariaLabel ?? placeholder ?? "Sök"}
+        className="h-9 w-full min-w-0 rounded-xl border border-border bg-surface-low pl-9 pr-8 text-[13px] outline-none placeholder:text-faint focus:border-primary/60"
+      />
+      {value && (
+        <button
+          type="button"
+          aria-label="Rensa sökning"
+          onClick={() => onChange("")}
+          className="absolute right-2 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-md text-faint transition hover:bg-surface-high hover:text-foreground"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** View title shown at the left of a page's toolbar, like "Medarbetare i <kund>" on Team. */
+export function ViewLabel({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <p className={cn("min-w-0 truncate text-[13px] text-muted-foreground", className)}>
+      <span className="font-semibold text-foreground">{children}</span>
+    </p>
+  );
 }
 
 export const inputClass =
