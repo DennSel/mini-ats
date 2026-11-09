@@ -40,7 +40,8 @@ import { CandidateDialog } from "./CandidateDialog";
 const ALL = "__all";
 
 export function BoardPage({ job, q }: { job: string; q: string }) {
-  const { candidates, jobs, activeOrgId, moveCandidate, can, orgJobs, orgCandidates } = useAts();
+  const { candidates, jobs, activeOrgId, activeOrg, moveCandidate, can, orgJobs, orgCandidates } =
+    useAts();
   const canMove = can("moveCandidates");
   const canManage = can("manageCandidates");
   const navigate = useNavigate({ from: "/board" });
@@ -143,55 +144,59 @@ export function BoardPage({ job, q }: { job: string; q: string }) {
       }}
     >
       <div className="flex h-full flex-col">
-        <div className="glass flex flex-col gap-2 rounded-2xl p-2 pl-4 md:flex-row md:items-center">
-          <ViewLabel className="md:pr-1">Kandidatflöde</ViewLabel>
-          <Select
-            value={jobFilter || ALL}
-            onValueChange={(v) => navigate({ search: (p) => ({ ...p, job: v === ALL ? "" : v }) })}
-          >
-            <SelectTrigger
-              className="h-9 rounded-xl border-border bg-surface-low md:w-60"
-              aria-label="Filtrera på tjänst"
+        <div className="glass flex flex-col gap-2 rounded-2xl p-2 pl-4">
+          <ViewLabel title="Kandidatflöde" org={activeOrg?.name} />
+          <div className="flex flex-col gap-2 md:flex-row md:items-center">
+            <Select
+              value={jobFilter || ALL}
+              onValueChange={(v) =>
+                navigate({ search: (p) => ({ ...p, job: v === ALL ? "" : v }) })
+              }
             >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>Alla tjänster</SelectItem>
-              {orgJobs.map((j) => (
-                <SelectItem key={j.id} value={j.id}>
-                  {j.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <SearchInput
-            value={qInput}
-            onChange={setQInput}
-            placeholder="Sök kandidat på namn…"
-            aria-label="Sök kandidat"
-          />
-          <div className="flex gap-2 md:ml-auto">
-            <Button
-              variant="outline"
-              className="shrink-0 border-border text-muted-foreground hover:text-foreground"
-              aria-label="Rensa filter"
-              disabled={!hasFilter && !qInput}
-              onClick={() => {
-                setQInput("");
-                navigate({ search: { job: "", q: "" } });
-              }}
-            >
-              <BrushCleaning /> Rensa
-            </Button>
-            {canManage && (
-              <Button
-                variant="gradient"
-                className="md:flex-none"
-                onClick={() => setDialog({ open: true, candidate: null })}
+              <SelectTrigger
+                className="h-9 rounded-xl border-border bg-surface-low md:w-60"
+                aria-label="Filtrera på tjänst"
               >
-                <Plus className="icon-rotate" /> Ny kandidat
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>Alla tjänster</SelectItem>
+                {orgJobs.map((j) => (
+                  <SelectItem key={j.id} value={j.id}>
+                    {j.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <SearchInput
+              value={qInput}
+              onChange={setQInput}
+              placeholder="Sök kandidat på namn…"
+              aria-label="Sök kandidat"
+            />
+            <div className="flex gap-2 md:ml-auto">
+              <Button
+                variant="outline"
+                className="shrink-0 border-border text-muted-foreground hover:text-foreground"
+                aria-label="Rensa filter"
+                disabled={!hasFilter && !qInput}
+                onClick={() => {
+                  setQInput("");
+                  navigate({ search: { job: "", q: "" } });
+                }}
+              >
+                <BrushCleaning /> Rensa
               </Button>
-            )}
+              {canManage && (
+                <Button
+                  variant="gradient"
+                  className="md:flex-none"
+                  onClick={() => setDialog({ open: true, candidate: null })}
+                >
+                  <Plus className="icon-rotate" /> Ny kandidat
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 

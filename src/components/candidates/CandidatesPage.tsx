@@ -28,7 +28,8 @@ import { CandidateDialog } from "@/components/board/CandidateDialog";
 const ALL = "__all";
 
 export function CandidatesPage() {
-  const { candidates, jobs, activeOrgId, assignCandidate, can, orgJobs, orgCandidates } = useAts();
+  const { candidates, jobs, activeOrgId, activeOrg, assignCandidate, can, orgJobs, orgCandidates } =
+    useAts();
   const [jobFilter, setJobFilter] = usePersistentState<string>("cands.job", ALL);
   const [q, setQ] = usePersistentState("cands.q", "");
   const [sort, setSort] = usePersistentState<"recent" | "oldest" | "stage" | "name" | "name-desc">(
@@ -161,55 +162,57 @@ export function CandidatesPage() {
         if (c) setDialog({ open: true, candidate: c });
       }}
     >
-      <div className="glass flex flex-col gap-2 rounded-2xl p-2 pl-4 md:flex-row md:items-center">
-        <ViewLabel className="md:pr-1">Kandidater</ViewLabel>
-        <Select value={jobFilter} onValueChange={setJobFilter}>
-          <SelectTrigger
-            className="h-9 rounded-xl border-border bg-surface-low md:w-64 md:min-w-36"
-            aria-label="Filtrera på tjänst"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL}>Alla kandidater ({orgCands.length})</SelectItem>
-            <SelectItem value={POOL}>Vilande ({poolCount})</SelectItem>
-            {orgJobs.map((j) => (
-              <SelectItem key={j.id} value={j.id}>
-                {j.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
-          <SelectTrigger
-            className="h-9 rounded-xl border-border bg-surface-low md:w-44 md:min-w-32"
-            aria-label="Sortera"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="recent">Datum: nyast först</SelectItem>
-            <SelectItem value="oldest">Datum: äldst först</SelectItem>
-            <SelectItem value="name">Namn A–Ö</SelectItem>
-            <SelectItem value="name-desc">Namn Ö–A</SelectItem>
-            <SelectItem value="stage">Stadie</SelectItem>
-          </SelectContent>
-        </Select>
-        <SearchInput
-          value={q}
-          onChange={setQ}
-          placeholder="Sök på namn eller e-post…"
-          aria-label="Sök kandidat"
-        />
-        {canManage && (
-          <Button
-            variant="gradient"
-            className="shrink-0 md:ml-auto"
-            onClick={() => setDialog({ open: true, candidate: null })}
-          >
-            <Plus className="icon-rotate" /> Ny kandidat
-          </Button>
-        )}
+      <div className="glass flex flex-col gap-2 rounded-2xl p-2 pl-4">
+        <ViewLabel title="Kandidater" org={activeOrg?.name} />
+        <div className="flex flex-col gap-2 md:flex-row md:items-center">
+          <Select value={jobFilter} onValueChange={setJobFilter}>
+            <SelectTrigger
+              className="h-9 rounded-xl border-border bg-surface-low md:w-64 md:min-w-36"
+              aria-label="Filtrera på tjänst"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>Alla kandidater ({orgCands.length})</SelectItem>
+              <SelectItem value={POOL}>Vilande ({poolCount})</SelectItem>
+              {orgJobs.map((j) => (
+                <SelectItem key={j.id} value={j.id}>
+                  {j.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
+            <SelectTrigger
+              className="h-9 rounded-xl border-border bg-surface-low md:w-44 md:min-w-32"
+              aria-label="Sortera"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">Datum: nyast först</SelectItem>
+              <SelectItem value="oldest">Datum: äldst först</SelectItem>
+              <SelectItem value="name">Namn A–Ö</SelectItem>
+              <SelectItem value="name-desc">Namn Ö–A</SelectItem>
+              <SelectItem value="stage">Stadie</SelectItem>
+            </SelectContent>
+          </Select>
+          <SearchInput
+            value={q}
+            onChange={setQ}
+            placeholder="Sök på namn eller e-post…"
+            aria-label="Sök kandidat"
+          />
+          {canManage && (
+            <Button
+              variant="gradient"
+              className="shrink-0 md:ml-auto"
+              onClick={() => setDialog({ open: true, candidate: null })}
+            >
+              <Plus className="icon-rotate" /> Ny kandidat
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Desktop table with column headers, like the jobs table */}
