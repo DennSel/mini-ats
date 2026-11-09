@@ -166,8 +166,21 @@ function ProfileMenu() {
 }
 
 function CustomerBanner() {
-  const { currentUser, organizations, activeOrg, selectOrg, selectedOrgId } = useAts();
+  const { currentUser, organizations, selectOrg, selectedOrgId } = useAts();
   if (currentUser?.role !== "admin") return null;
+  if (organizations.length === 0) {
+    return (
+      <Link
+        to="/admin"
+        className="flex min-w-0 shrink items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-[12px] font-medium text-primary transition hover:bg-primary/15"
+      >
+        <span className="relative flex h-1.5 w-1.5 shrink-0">
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+        </span>
+        <span className="truncate">Inga organisationer ännu · Skapa i Admin</span>
+      </Link>
+    );
+  }
   return (
     <div className="flex min-w-0 shrink items-center">
       <div className="flex min-w-0 items-center gap-2 rounded-full border border-primary/25 bg-primary/10 py-1 pl-3 pr-1 text-[12px]">

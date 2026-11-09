@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Avatar, SearchInput, ViewLabel, stageStyles } from "@/components/shared";
+import { Avatar, NoActiveOrgState, SearchInput, ViewLabel, stageStyles } from "@/components/shared";
 import { cn } from "@/lib/utils";
 import { POOL, WithCandidatePanel, useIsDesktop } from "@/components/board/CandidatePanel";
 import { CandidateDialog } from "@/components/board/CandidateDialog";
@@ -80,6 +80,10 @@ export function CandidatesPage() {
 
   const addInline = desktop && dialog.open && !dialog.candidate;
   const closeDialog = (open: boolean) => setDialog((d) => ({ ...d, open }));
+
+  if (!activeOrgId) {
+    return <NoActiveOrgState />;
+  }
 
   return (
     <WithCandidatePanel

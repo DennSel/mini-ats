@@ -1,4 +1,5 @@
 import { Icon, Minus, Plus, Search, X, type LucideProps } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/ats-logic";
@@ -267,6 +268,33 @@ export function ViewLabel({
     <p className={cn("min-w-0 truncate text-[13px] text-muted-foreground", className)}>
       <span className="font-semibold text-foreground">{children}</span>
     </p>
+  );
+}
+
+/** Empty state shown on org-scoped pages when no organisation exists yet. */
+export function NoActiveOrgState() {
+  return (
+    <div className="glass-card mx-auto my-8 max-w-md rounded-2xl p-8 text-center">
+      <div className="mx-auto mb-3 grid h-11 w-11 place-items-center rounded-xl border border-primary/20 bg-primary/10 text-primary">
+        <BuildingComplexPlus className="h-5 w-5" />
+      </div>
+      <h2 className="font-display text-base font-bold text-foreground">
+        Ingen organisation finns ännu
+      </h2>
+      <p className="mt-1.5 text-[13px] text-muted-foreground">
+        Skapa en kundorganisation under Admin för att börja lägga upp tjänster, kandidater och
+        medarbetare.
+      </p>
+      <div className="mt-5">
+        <Link
+          to="/admin"
+          onClick={() => uiStore.set("admin.tab", "orgs")}
+          className="btn-gradient inline-flex h-9 items-center justify-center gap-2 rounded-xl px-4 font-display text-[13px] font-semibold text-on-primary shadow-sm transition"
+        >
+          Skapa organisation i Admin
+        </Link>
+      </div>
+    </div>
   );
 }
 

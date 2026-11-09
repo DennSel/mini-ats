@@ -15,6 +15,9 @@ alter policy candidates_write on candidates to authenticated;
 revoke execute on function is_admin(), my_org(), my_org_role() from public, anon;
 grant execute on function is_admin(), my_org(), my_org_role() to authenticated, service_role;
 
+-- Ensure authenticated has table-level CRUD on orgs, jobs and candidates (RLS enforces role/org).
+grant select, insert, update, delete on orgs, jobs, candidates to authenticated;
+
 -- Trigger functions are invoked by PostgreSQL on DML/DDL, never via RPC by
 -- API roles.
 revoke execute on function check_candidate_job() from public, anon, authenticated;

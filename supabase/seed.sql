@@ -1,6 +1,9 @@
 -- seed.sql: Idempotent demo data for Nordvik Tech AB and Solberg Logistik.
 -- Safe to run in the Supabase SQL Editor before or after creating organisations in /admin.
 
+-- Ensure authenticated role has CRUD table grants on orgs (protected by orgs_write RLS policy).
+grant select, insert, update, delete on public.orgs, public.jobs, public.candidates to authenticated;
+
 do $$
 declare
   v_nordvik uuid;
