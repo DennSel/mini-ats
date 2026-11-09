@@ -44,6 +44,7 @@ import {
   labelClass,
 } from "@/components/shared";
 import { OrgRoleSelect } from "@/components/team/OrgRoleSelect";
+import { FEATURES } from "@/lib/features";
 import { cn } from "@/lib/utils";
 import { ORG_ROLES, type Organization, type User } from "@/lib/mock-data";
 
@@ -56,7 +57,7 @@ const userSchema = z
     name: z.string().trim().min(2, "Ange namn (minst 2 tecken)").max(100),
     email: z.string().trim().min(1, "Ange e-postadress").email("Ogiltig e-postadress").max(255),
     role: z.enum(["admin", "customer"]),
-    orgRole: z.enum(["owner", "recruiter", "reviewer", "viewer"]),
+    orgRole: z.enum(["owner", "member", "viewer"]),
     orgId: z.string(),
     newOrgName: z.string().trim().max(100),
   })
@@ -281,24 +282,28 @@ export function AdminPage() {
                         {orgName(u.orgId)}
                       </div>
                       <div className="flex gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          aria-label={`Redigera ${u.name}`}
-                          onClick={() => setEditUser(u)}
-                        >
-                          <Pencil />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          aria-label={`Ta bort ${u.name}`}
-                          disabled={u.id === currentUser?.id}
-                          className="text-faint hover:bg-error-bg hover:text-error"
-                          onClick={() => setRemoveUser(u)}
-                        >
-                          <Trash2 />
-                        </Button>
+                        {FEATURES.adminEditUser && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label={`Redigera ${u.name}`}
+                            onClick={() => setEditUser(u)}
+                          >
+                            <Pencil />
+                          </Button>
+                        )}
+                        {FEATURES.adminDeleteUser && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label={`Ta bort ${u.name}`}
+                            disabled={u.id === currentUser?.id}
+                            className="text-faint hover:bg-error-bg hover:text-error"
+                            onClick={() => setRemoveUser(u)}
+                          >
+                            <Trash2 />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}

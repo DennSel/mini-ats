@@ -8,8 +8,7 @@ export type Permission =
 
 const ROLE_PERMISSIONS: Record<OrgRole, Permission[]> = {
   owner: ["moveCandidates", "manageCandidates", "manageJobs", "manageTeam"],
-  recruiter: ["moveCandidates", "manageCandidates", "manageJobs"],
-  reviewer: ["moveCandidates"],
+  member: ["moveCandidates", "manageCandidates", "manageJobs"],
   viewer: [],
 };
 

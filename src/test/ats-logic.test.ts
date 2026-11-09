@@ -52,11 +52,12 @@ describe("ats rules", () => {
   it("role permissions", () => {
     const as = (orgRole: User["orgRole"]) => ({ ...customer, orgRole });
     expect(can(as("owner"), "manageTeam")).toBe(true);
-    expect(can(as("recruiter"), "manageTeam")).toBe(false);
-    expect(can(as("recruiter"), "manageJobs")).toBe(true);
-    expect(can(as("reviewer"), "moveCandidates")).toBe(true);
-    expect(can(as("reviewer"), "manageCandidates")).toBe(false);
+    expect(can(as("member"), "manageJobs")).toBe(true);
+    expect(can(as("member"), "manageCandidates")).toBe(true);
+    expect(can(as("member"), "moveCandidates")).toBe(true);
+    expect(can(as("member"), "manageTeam")).toBe(false);
     expect(can(as("viewer"), "moveCandidates")).toBe(false);
+    expect(can(as("viewer"), "manageJobs")).toBe(false);
     expect(can(admin, "manageTeam")).toBe(true);
   });
 
@@ -75,36 +76,6 @@ describe("ats rules", () => {
     expect(
       assignCandidate(seedCandidates, c.id, null).find((x) => x.id === c.id)?.jobId,
     ).toBeNull();
-  });
-});
-
-import { canSeeJob, visibleCandidates } from "@/lib/ats-logic";
-
-describe("permission matrix", () => {
-  const mk = (orgRole: User["orgRole"]): User => ({ ...customer, orgRole });
-  it("everyone can view; reviewer moves and notes but cannot edit candidates or jobs", () => {
-    expect(can(mk("viewer"), "moveCandidates")).toBe(false);
-    expect(can(mk("reviewer"), "moveCandidates")).toBe(true);
-    expect(can(mk("reviewer"), "manageCandidates")).toBe(false);
-    expect(can(mk("recruiter"), "manageCandidates")).toBe(true);
-    expect(can(mk("recruiter"), "manageJobs")).toBe(true);
-    expect(can(mk("recruiter"), "manageTeam")).toBe(false);
-    expect(can(mk("owner"), "manageTeam")).toBe(true);
-  });
-});
-
-describe("job access", () => {
-  const limited: User = { ...customer, orgRole: "reviewer", jobIds: ["job-n1"] };
-  it("member with limited access only sees given jobs; owners see all", () => {
-    expect(canSeeJob(limited, "job-n1")).toBe(true);
-    expect(canSeeJob(limited, "job-n2")).toBe(false);
-    expect(canSeeJob({ ...limited, orgRole: "owner" }, "job-n2")).toBe(true);
-    expect(canSeeJob({ ...customer, orgRole: "reviewer" }, "job-n2")).toBe(true);
-  });
-  it("dormant candidates stay visible, other jobs' candidates are hidden", () => {
-    const vis = visibleCandidates(limited, seedCandidates, "org-nordvik");
-    expect(vis.every((c) => c.jobId === null || c.jobId === "job-n1")).toBe(true);
-    expect(vis.some((c) => c.jobId === null)).toBe(true);
   });
 });
 

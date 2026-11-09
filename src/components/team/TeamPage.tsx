@@ -7,7 +7,8 @@ import { Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useAts } from "@/lib/ats-store";
 import { isLastOwner } from "@/lib/ats-logic";
-import { type OrgRole, type User } from "@/lib/mock-data";
+import { FEATURES } from "@/lib/features";
+import { ORG_ROLES, type OrgRole, type User } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -34,7 +35,7 @@ import { JobAccessMenu } from "./JobAccessMenu";
 const schema = z.object({
   name: z.string().trim().min(2, "Ange namn (minst 2 tecken)").max(100),
   email: z.string().trim().min(1, "Ange e-postadress").email("Ogiltig e-postadress").max(255),
-  orgRole: z.enum(["owner", "recruiter", "reviewer", "viewer"]),
+  orgRole: z.enum(["owner", "member", "viewer"]),
 });
 type Values = z.infer<typeof schema>;
 
@@ -57,7 +58,7 @@ export function TeamPage() {
     formState: { errors },
   } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", email: "", orgRole: "recruiter" },
+    defaultValues: { name: "", email: "", orgRole: "member" },
   });
   const inviteRole = watch("orgRole");
 
@@ -77,7 +78,7 @@ export function TeamPage() {
     });
     setInviteJobs(undefined);
     toast.success(`${v.name} bjöds in`);
-    reset({ name: "", email: "", orgRole: "recruiter" });
+    reset({ name: "", email: "", orgRole: "member" });
     setOpen(false);
   };
 
@@ -119,16 +120,18 @@ export function TeamPage() {
           render={({ field }) => <OrgRoleSelect value={field.value} onChange={field.onChange} />}
         />
       </div>
-      <div>
-        <span className={labelClass}>Tjänsteåtkomst</span>
-        <JobAccessMenu
-          orgRole={inviteRole}
-          jobIds={inviteJobs}
-          jobs={allOrgJobs}
-          onChange={setInviteJobs}
-          className="sm:w-full"
-        />
-      </div>
+      {FEATURES.jobAccess && (
+        <div>
+          <span className={labelClass}>Tjänsteåtkomst</span>
+          <JobAccessMenu
+            orgRole={inviteRole}
+            jobIds={inviteJobs}
+            jobs={allOrgJobs}
+            onChange={setInviteJobs}
+            className="sm:w-full"
+          />
+        </div>
+      )}
       <Button type="submit" variant="gradient" className="w-full">
         <UserPlus /> Bjud in
       </Button>
@@ -168,29 +171,39 @@ export function TeamPage() {
                   <div className="truncate text-[11px] text-muted-foreground">{u.email}</div>
                 </div>
                 <div className="col-span-3 row-start-2 grid grid-cols-2 gap-2 sm:contents">
-                  <OrgRoleSelect
-                    value={u.orgRole}
-                    onChange={(r) => changeRole(u, r)}
-                    className="w-full sm:w-36"
-                  />
-                  <JobAccessMenu
-                    orgRole={u.orgRole}
-                    jobIds={u.jobIds}
-                    name={u.name}
-                    jobs={allOrgJobs}
-                    onChange={(jobIds) => setJobAccess(u.id, jobIds)}
-                  />
+                  {FEATURES.teamRoleChange ? (
+                    <OrgRoleSelect
+                      value={u.orgRole}
+                      onChange={(r) => changeRole(u, r)}
+                      className="w-full sm:w-36"
+                    />
+                  ) : (
+                    <span className="inline-flex rounded-full border border-accent-3/30 bg-accent-3/10 px-2.5 py-0.5 text-[11px] font-semibold text-accent-3">
+                      {ORG_ROLES.find((r) => r.id === u.orgRole)?.label}
+                    </span>
+                  )}
+                  {FEATURES.jobAccess && (
+                    <JobAccessMenu
+                      orgRole={u.orgRole}
+                      jobIds={u.jobIds}
+                      name={u.name}
+                      jobs={allOrgJobs}
+                      onChange={(jobIds) => setJobAccess(u.id, jobIds)}
+                    />
+                  )}
                 </div>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  aria-label={`Ta bort ${u.name}`}
-                  disabled={u.id === currentUser?.id || isLastOwner(users, u.id)}
-                  className="text-faint hover:bg-error-bg hover:text-error"
-                  onClick={() => setRemove(u)}
-                >
-                  <Trash2 />
-                </Button>
+                {FEATURES.teamRemoveMember && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    aria-label={`Ta bort ${u.name}`}
+                    disabled={u.id === currentUser?.id || isLastOwner(users, u.id)}
+                    className="text-faint hover:bg-error-bg hover:text-error"
+                    onClick={() => setRemove(u)}
+                  >
+                    <Trash2 />
+                  </Button>
+                )}
               </div>
             ))}
             {members.length === 0 && (

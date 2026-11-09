@@ -7,7 +7,14 @@ export const Route = createFileRoute("/_app")({
 });
 
 function AppLayout() {
-  const { currentUser } = useAts();
+  const { currentUser, authReady } = useAts();
+  if (!authReady) {
+    return (
+      <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">
+        Laddar…
+      </div>
+    );
+  }
   if (!currentUser) return <Navigate to="/login" replace />;
   return (
     <AppShell>

@@ -1,25 +1,12 @@
 export type Role = "admin" | "customer";
 /** Role inside a customer organisation. */
-export type OrgRole = "owner" | "recruiter" | "reviewer" | "viewer";
+export type OrgRole = "owner" | "member" | "viewer";
 
-export const ORG_ROLES: { id: OrgRole; label: string; description: string }[] = [
-  {
-    id: "owner",
-    label: "Ägare",
-    description: "Allt, inkl. bjuda in/ta bort medarbetare och styra tjänsteåtkomst",
-  },
-  {
-    id: "recruiter",
-    label: "Rekryterare",
-    description: "Skapa/redigera tjänster och kandidater, flytta och anteckna",
-  },
-  {
-    id: "reviewer",
-    label: "Bedömare",
-    description: "Flytta kandidater mellan steg och skriva anteckningar",
-  },
-  { id: "viewer", label: "Läsare", description: "Se tjänster och kandidater" },
-];
+export const ORG_ROLES = [
+  { id: "owner", label: "Ägare", description: "Hanterar teamet och allt annat" },
+  { id: "member", label: "Medlem", description: "Jobb, kandidater och flytt" },
+  { id: "viewer", label: "Läsare", description: "Kan bara läsa" },
+] as const;
 
 export interface CandidateLink {
   id: string;
@@ -38,7 +25,6 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  password: string;
   role: Role;
   orgRole: OrgRole;
   orgId: string | null;
@@ -95,7 +81,6 @@ export const seedUsers: User[] = [
     id: "u-admin",
     name: "Dennis Sandberg",
     email: "admin@kandsys.se",
-    password: "admin123",
     role: "admin",
     orgRole: "owner",
     orgId: null,
@@ -104,7 +89,6 @@ export const seedUsers: User[] = [
     id: "u-anna",
     name: "Anna Lindqvist",
     email: "anna@nordvik.se",
-    password: "kund123",
     role: "customer",
     orgRole: "owner",
     orgId: "org-nordvik",
@@ -113,16 +97,14 @@ export const seedUsers: User[] = [
     id: "u-lars",
     name: "Lars Ek",
     email: "lars@nordvik.se",
-    password: "kund123",
     role: "customer",
-    orgRole: "recruiter",
+    orgRole: "member",
     orgId: "org-nordvik",
   },
   {
     id: "u-mia",
     name: "Mia Holm",
     email: "mia@nordvik.se",
-    password: "kund123",
     role: "customer",
     orgRole: "viewer",
     orgId: "org-nordvik",
@@ -131,7 +113,6 @@ export const seedUsers: User[] = [
     id: "u-erik",
     name: "Erik Holm",
     email: "erik@solberg.se",
-    password: "kund123",
     role: "customer",
     orgRole: "owner",
     orgId: "org-solberg",
