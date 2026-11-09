@@ -11,7 +11,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { loadUser, signOut } from "./auth";
 import { supabase } from "./supabase";
-import { createUser as createUserRpc } from "./users.functions";
+import {
+  createUser as createUserRpc,
+  deleteUser as deleteUserRpc,
+  updateUser as updateUserRpc,
+} from "./users.functions";
 import type { Candidate, Job, Organization, Stage, User } from "./types";
 import {
   activeOrgFor,
@@ -279,6 +283,55 @@ export function AtsProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  const updateUserMut = useMutation({
+    mutationFn: async (v: { id: string; input: Partial<UserInput> }) => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Ej inloggad");
+      return await updateUserRpc({
+        data: {
+          accessToken: session.access_token,
+          userId: v.id,
+          ...(v.input.name !== undefined ? { fullName: v.input.name } : {}),
+          ...(v.input.email !== undefined ? { email: v.input.email } : {}),
+          ...(v.input.role !== undefined ? { role: v.input.role } : {}),
+          ...(v.input.orgRole !== undefined ? { orgRole: v.input.orgRole } : {}),
+          ...("orgId" in v.input ? { orgId: v.input.orgId ?? null } : {}),
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Användaren uppdaterades");
+      void qc.invalidateQueries({ queryKey: ["profiles"] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Kunde inte uppdatera användaren");
+    },
+  });
+
+  const deleteUserMut = useMutation({
+    mutationFn: async (id: string) => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Ej inloggad");
+      return await deleteUserRpc({
+        data: {
+          accessToken: session.access_token,
+          userId: id,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Användaren togs bort");
+      void qc.invalidateQueries({ queryKey: ["profiles"] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Kunde inte ta bort användaren");
+    },
+  });
+
   const createJobMut = useMutation({
     mutationFn: async (input: JobInput) => {
       if (!activeOrgId) throw new Error("Ingen aktiv organisation");
@@ -499,11 +552,11 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           input: { links: c.links.filter((l) => l.id !== linkId) },
         });
       },
-      updateUser: () => {
-        throw new Error("Inte implementerat");
+      updateUser: (id, input) => {
+        updateUserMut.mutate({ id, input });
       },
-      deleteUser: () => {
-        throw new Error("Inte implementerat");
+      deleteUser: (id) => {
+        deleteUserMut.mutate(id);
       },
       createOrg: (name) => {
         createOrgMut.mutate(name);
@@ -543,6 +596,8 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       updateOrgMut,
       deleteOrgMut,
       createUserMut,
+      updateUserMut,
+      deleteUserMut,
     ],
   );
 

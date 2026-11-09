@@ -90,7 +90,6 @@ export function TeamPage() {
       return;
     }
     updateUser(u.id, { orgRole });
-    toast.success("Rollen uppdaterades");
   };
 
   const setJobAccess = (id: string, jobIds: string[] | undefined) => {
@@ -246,7 +245,6 @@ export function TeamPage() {
                 className="rounded-xl bg-destructive text-on-primary hover:bg-destructive/90"
                 onClick={() => {
                   if (remove) deleteUser(remove.id);
-                  toast.success("Medarbetaren togs bort");
                   setRemove(null);
                 }}
               >

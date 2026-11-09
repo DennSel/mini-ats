@@ -1,9 +1,72 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
-import { decideCreateUser } from "./create-user-rules";
+import {
+  decideCreateUser,
+  decideDeleteUser,
+  decideUpdateUser,
+  type Caller,
+  type TargetUser,
+} from "./create-user-rules";
 import { supabaseUrl as defaultSupabaseUrl } from "./supabase";
 import type { OrgRole, Role } from "./types";
+
+function getServiceClient() {
+  const supabaseUrl =
+    (import.meta.env["VITE_SUPABASE_URL"] as string | undefined) ||
+    process.env["VITE_SUPABASE_URL"] ||
+    defaultSupabaseUrl;
+  // Lovable reserves the SUPABASE_ prefix, so the key is stored as SB_SERVICE_ROLE_KEY there.
+  const serviceRoleKey =
+    process.env["SUPABASE_SERVICE_ROLE_KEY"] || process.env["SB_SERVICE_ROLE_KEY"];
+
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error("Serverkonfiguration saknas (SUPABASE_SERVICE_ROLE_KEY)");
+  }
+
+  return createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
+async function resolveCaller(
+  sb: ReturnType<typeof getServiceClient>,
+  accessToken: string,
+): Promise<(Caller & { id: string }) | null> {
+  const { data: auth, error: authErr } = await sb.auth.getUser(accessToken);
+  if (authErr || !auth.user) {
+    throw new Error("Ej inloggad");
+  }
+
+  const { data: p } = await sb
+    .from("profiles")
+    .select("role, org_role, org_id")
+    .eq("id", auth.user.id)
+    .single();
+
+  const profile = p as { role: Role; org_role: OrgRole; org_id: string | null } | null;
+  if (!profile) return null;
+  return {
+    id: auth.user.id,
+    role: profile.role,
+    orgRole: profile.org_role,
+    orgId: profile.org_id,
+  };
+}
+
+async function countOrgOwners(
+  sb: ReturnType<typeof getServiceClient>,
+  orgId: string | null,
+): Promise<number> {
+  if (!orgId) return 0;
+  const { count } = await sb
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("role", "customer")
+    .eq("org_id", orgId)
+    .eq("org_role", "owner");
+  return count ?? 0;
+}
 
 const createUserInputSchema = z.object({
   accessToken: z.string().min(1),
@@ -19,37 +82,8 @@ const createUserInputSchema = z.object({
 export const createUser = createServerFn({ method: "POST" })
   .validator(createUserInputSchema)
   .handler(async ({ data }) => {
-    const supabaseUrl =
-      (import.meta.env["VITE_SUPABASE_URL"] as string | undefined) ||
-      process.env["VITE_SUPABASE_URL"] ||
-      defaultSupabaseUrl;
-    // Lovable reserves the SUPABASE_ prefix, so the key is stored as SB_SERVICE_ROLE_KEY there.
-    const serviceRoleKey =
-      process.env["SUPABASE_SERVICE_ROLE_KEY"] || process.env["SB_SERVICE_ROLE_KEY"];
-
-    if (!supabaseUrl || !serviceRoleKey) {
-      throw new Error("Serverkonfiguration saknas (SUPABASE_SERVICE_ROLE_KEY)");
-    }
-
-    const sb = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
-    const { data: auth, error: authErr } = await sb.auth.getUser(data.accessToken);
-    if (authErr || !auth.user) {
-      throw new Error("Ej inloggad");
-    }
-
-    const { data: p } = await sb
-      .from("profiles")
-      .select("role, org_role, org_id")
-      .eq("id", auth.user.id)
-      .single();
-
-    const profile = p as { role: Role; org_role: OrgRole; org_id: string | null } | null;
-    const me = profile
-      ? { role: profile.role, orgRole: profile.org_role, orgId: profile.org_id }
-      : null;
+    const sb = getServiceClient();
+    const me = await resolveCaller(sb, data.accessToken);
 
     const d = decideCreateUser(me, {
       role: data.role,
@@ -100,4 +134,144 @@ export const createUser = createServerFn({ method: "POST" })
     }
 
     return { id: created.user.id, orgId };
+  });
+
+const updateUserInputSchema = z.object({
+  accessToken: z.string().min(1),
+  userId: z.string().uuid(),
+  fullName: z.string().trim().min(1).optional(),
+  email: z.string().trim().email().optional(),
+  role: z.enum(["admin", "customer"]).optional(),
+  orgRole: z.enum(["owner", "member", "viewer"]).optional(),
+  orgId: z.string().uuid().nullable().optional(),
+});
+
+export const updateUser = createServerFn({ method: "POST" })
+  .validator(updateUserInputSchema)
+  .handler(async ({ data }) => {
+    const sb = getServiceClient();
+    const me = await resolveCaller(sb, data.accessToken);
+
+    const { data: targetRow } = await sb
+      .from("profiles")
+      .select("id, full_name, email, role, org_role, org_id")
+      .eq("id", data.userId)
+      .single();
+
+    if (!targetRow) {
+      throw new Error("Användaren hittades inte");
+    }
+
+    const row = targetRow as {
+      id: string;
+      full_name: string;
+      email: string;
+      role: Role;
+      org_role: OrgRole;
+      org_id: string | null;
+    };
+
+    const target: TargetUser = {
+      id: row.id,
+      fullName: row.full_name,
+      email: row.email,
+      role: row.role,
+      orgRole: row.org_role,
+      orgId: row.org_id,
+    };
+
+    const ownerCount = await countOrgOwners(sb, target.orgId);
+    const d = decideUpdateUser(
+      me,
+      target,
+      {
+        fullName: data.fullName,
+        email: data.email,
+        role: data.role,
+        orgRole: data.orgRole,
+        orgId: data.orgId,
+      },
+      ownerCount,
+    );
+
+    if (!d.ok) {
+      throw new Error(d.reason);
+    }
+
+    if (d.email !== target.email) {
+      const { error: authUpdateErr } = await sb.auth.admin.updateUserById(target.id, {
+        email: d.email,
+        email_confirm: true,
+      });
+      if (authUpdateErr) throw new Error(authUpdateErr.message);
+    }
+
+    const { error: profileErr } = await sb
+      .from("profiles")
+      .update({
+        full_name: d.fullName,
+        email: d.email,
+        role: d.role,
+        org_role: d.orgRole,
+        org_id: d.orgId,
+      })
+      .eq("id", target.id);
+
+    if (profileErr) {
+      throw new Error(profileErr.message);
+    }
+
+    return { id: target.id };
+  });
+
+const deleteUserInputSchema = z.object({
+  accessToken: z.string().min(1),
+  userId: z.string().uuid(),
+});
+
+export const deleteUser = createServerFn({ method: "POST" })
+  .validator(deleteUserInputSchema)
+  .handler(async ({ data }) => {
+    const sb = getServiceClient();
+    const me = await resolveCaller(sb, data.accessToken);
+
+    const { data: targetRow } = await sb
+      .from("profiles")
+      .select("id, role, org_role, org_id")
+      .eq("id", data.userId)
+      .single();
+
+    if (!targetRow) {
+      throw new Error("Användaren hittades inte");
+    }
+
+    const row = targetRow as {
+      id: string;
+      role: Role;
+      org_role: OrgRole;
+      org_id: string | null;
+    };
+
+    const ownerCount = await countOrgOwners(sb, row.org_id);
+    const d = decideDeleteUser(
+      me,
+      {
+        id: row.id,
+        role: row.role,
+        orgRole: row.org_role,
+        orgId: row.org_id,
+      },
+      ownerCount,
+    );
+
+    if (!d.ok) {
+      throw new Error(d.reason);
+    }
+
+    const { error: delErr } = await sb.auth.admin.deleteUser(row.id);
+    if (delErr) {
+      throw new Error(delErr.message);
+    }
+
+    return { id: row.id };
   });
