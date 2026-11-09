@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "vitest run",
+    "test:db": "bunx supabase test db",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
