@@ -1,4 +1,4 @@
-import { Icon, Minus, Plus, Handshake, Search, X, type LucideProps } from "lucide-react";
+import { Icon, Minus, Plus, Search, X, type LucideProps } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { initials } from "@/lib/ats-logic";
@@ -69,9 +69,11 @@ export type LogoProps = React.HTMLAttributes<HTMLDivElement>;
 export function Logo({ className, ...props }: LogoProps) {
   return (
     <div className={cn("inline-flex items-center gap-2.5", className)} {...props}>
-      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[#5d5fe7] to-[#7948c2] text-white shadow-sm">
-        <Handshake className="h-4 w-4" />
-      </div>
+      <img
+        src="/kandsys_logo.webp"
+        alt=""
+        className="h-8 w-8 shrink-0 rounded-lg object-contain shadow-sm"
+      />
       <span className="font-display text-lg font-bold tracking-tight text-foreground whitespace-nowrap">
         KandSys
       </span>
