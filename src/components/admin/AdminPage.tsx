@@ -56,6 +56,7 @@ const userSchema = z
   .object({
     name: z.string().trim().min(2, "Ange namn (minst 2 tecken)").max(100),
     email: z.string().trim().min(1, "Ange e-postadress").email("Ogiltig e-postadress").max(255),
+    password: z.string().min(8, "Lösenordet måste vara minst 8 tecken").max(100),
     role: z.enum(["admin", "customer"]),
     orgRole: z.enum(["owner", "member", "viewer"]),
     orgId: z.string(),
@@ -71,6 +72,7 @@ type UserValues = z.infer<typeof userSchema>;
 const emptyUser: UserValues = {
   name: "",
   email: "",
+  password: "",
   role: "customer",
   orgRole: "owner",
   orgId: "",
@@ -133,13 +135,13 @@ export function AdminPage() {
       {
         name: v.name,
         email: v.email,
+        password: v.password,
         role: v.role,
         orgRole: v.orgRole,
         orgId: isNew ? null : v.orgId || null,
       },
       isNew ? v.newOrgName : undefined,
     );
-    toast.success("Användaren skapades");
     form.reset(emptyUser);
     setPanel(null);
   };
@@ -469,6 +471,22 @@ function UserFields({
         <input id="u-email" type="email" className={inputClass} {...register("email")} />
         <FieldError message={errors.email?.message} />
       </div>
+      {allowNewOrg && (
+        <div>
+          <label htmlFor="u-password" className={labelClass}>
+            Tillfälligt lösenord
+          </label>
+          <input
+            id="u-password"
+            type="password"
+            autoComplete="new-password"
+            placeholder="Minst 8 tecken"
+            className={inputClass}
+            {...register("password")}
+          />
+          <FieldError message={errors.password?.message} />
+        </div>
+      )}
       <div>
         <span className={labelClass}>Typ</span>
         <div className="flex gap-2">
@@ -549,6 +567,7 @@ function EditUserDialog({ user, onClose }: { user: User | null; onClose: () => v
       form.reset({
         name: user.name,
         email: user.email,
+        password: "placeholder-password",
         role: user.role,
         orgRole: user.orgRole,
         orgId: user.orgId ?? "",

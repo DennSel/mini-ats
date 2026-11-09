@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { loadUser, signOut } from "./auth";
 import { supabase } from "./supabase";
+import { createUser as createUserRpc } from "./users.functions";
 import type { Candidate, Job, Organization, Stage, User } from "./types";
 import {
   activeOrgFor,
@@ -44,7 +45,9 @@ export type CandidateInput = Omit<
   links?: Candidate["links"];
   position?: number;
 };
-export type UserInput = Omit<User, "id">;
+export type UserInput = Omit<User, "id"> & {
+  password?: string | undefined;
+};
 
 interface AtsState {
   users: User[];
@@ -227,6 +230,38 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       void qc.invalidateQueries({ queryKey: ["candidates"] });
     },
     onError: () => toast.error("Kunde inte ta bort organisationen"),
+  });
+
+  const createUserMut = useMutation({
+    mutationFn: async (v: { input: UserInput; newOrgName?: string | undefined }) => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Ej inloggad");
+      if (!v.input.password || v.input.password.length < 8) {
+        throw new Error("Lösenordet måste vara minst 8 tecken");
+      }
+      return await createUserRpc({
+        data: {
+          accessToken: session.access_token,
+          email: v.input.email,
+          fullName: v.input.name,
+          password: v.input.password,
+          role: v.input.role,
+          orgRole: v.input.orgRole,
+          ...(v.input.orgId ? { orgId: v.input.orgId } : {}),
+          ...(v.newOrgName ? { newOrgName: v.newOrgName } : {}),
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Användaren skapades");
+      void qc.invalidateQueries({ queryKey: ["profiles"] });
+      void qc.invalidateQueries({ queryKey: ["orgs"] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Kunde inte skapa användaren");
+    },
   });
 
   const createJobMut = useMutation({
@@ -465,8 +500,8 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         deleteOrgMut.mutate(id);
       },
       can: (perm) => canDo(currentUser, perm),
-      createUser: () => {
-        throw new Error("Inte implementerat");
+      createUser: (input, newOrgName) => {
+        createUserMut.mutate({ input, newOrgName });
       },
     }),
     [
@@ -492,6 +527,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       createOrgMut,
       updateOrgMut,
       deleteOrgMut,
+      createUserMut,
     ],
   );
 
