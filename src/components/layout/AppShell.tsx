@@ -216,21 +216,22 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="relative flex min-h-screen w-full flex-col">
       <AmbientBackground />
       <header
-        className={cn(
-          "glass sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-x-0 border-t-0 px-4 lg:px-8",
-          isAdmin && "admin-bar",
-        )}
+        className={cn("glass sticky top-0 z-30 border-x-0 border-t-0", isAdmin && "admin-bar")}
       >
-        <div className="flex shrink-0 items-center gap-2 sm:gap-4">
-          <Logo className="shrink-0" />
-          <Nav />
-        </div>
-        <div className="flex min-w-0 items-center gap-2">
-          <CustomerBanner />
-          <ProfileMenu />
+        <div className="mx-auto flex h-14 w-full max-w-[1440px] items-center justify-between gap-3 px-4 lg:px-8">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+            <Logo className="shrink-0" />
+            <Nav />
+          </div>
+          <div className="flex min-w-0 items-center gap-2">
+            <CustomerBanner />
+            <ProfileMenu />
+          </div>
         </div>
       </header>
-      <main className="min-w-0 flex-1 px-4 pb-24 pt-6 sm:pb-6 lg:px-8 lg:py-8">{children}</main>
+      <main className="min-w-0 flex-1 pb-24 pt-6 sm:pb-6 lg:py-8">
+        <div className="mx-auto w-full max-w-[1440px] px-4 lg:px-8">{children}</div>
+      </main>
       <BottomNav />
     </div>
   );
