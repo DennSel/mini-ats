@@ -12,7 +12,7 @@ import { WithSidePanel, useIsDesktop, usePersistentState } from "@/components/sh
 type Filter = "all" | "open" | "closed";
 
 export function JobsPage() {
-  const { jobs, candidates, activeOrgId, updateJob, can, orgJobs } = useAts();
+  const { jobs, candidates, activeOrgId, activeOrg, updateJob, can, orgJobs } = useAts();
   const canJobs = can("manageJobs");
   const [filter, setFilter] = usePersistentState<Filter>("jobs.filter", "all");
   const [q, setQ] = usePersistentState("jobs.q", "");
@@ -88,41 +88,43 @@ export function JobsPage() {
       onClose={closeDialog}
     >
       <div>
-        <div className="glass flex flex-col gap-3 rounded-2xl p-2 pl-4 sm:flex-row sm:items-center">
-          <ViewLabel className="sm:pr-1">Tjänster</ViewLabel>
-          <div className="flex min-w-0 gap-1 overflow-x-auto no-scrollbar">
-            {(
-              [
-                ["all", "Alla"],
-                ["open", "Öppna"],
-                ["closed", "Stängda"],
-              ] as const
-            ).map(([k, label]) => (
-              <button
-                key={k}
-                onClick={() => setFilter(k)}
-                className={cn(
-                  "flex shrink-0 items-center gap-2 rounded-xl border px-3 py-1.5 font-display text-[12px] font-semibold transition",
-                  filter === k
-                    ? "nav-active text-foreground"
-                    : "border-transparent text-muted-foreground hover:bg-surface-high",
-                )}
+        <div className="glass flex flex-col gap-2 rounded-2xl p-2 pl-4">
+          <ViewLabel title="Tjänster" org={activeOrg?.name} />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="flex min-w-0 gap-1 overflow-x-auto no-scrollbar">
+              {(
+                [
+                  ["all", "Alla"],
+                  ["open", "Öppna"],
+                  ["closed", "Stängda"],
+                ] as const
+              ).map(([k, label]) => (
+                <button
+                  key={k}
+                  onClick={() => setFilter(k)}
+                  className={cn(
+                    "flex shrink-0 items-center gap-2 rounded-xl border px-3 py-1.5 font-display text-[12px] font-semibold transition",
+                    filter === k
+                      ? "nav-active text-foreground"
+                      : "border-transparent text-muted-foreground hover:bg-surface-high",
+                  )}
+                >
+                  {label}
+                  <span className="font-mono text-[11px] text-faint">{counts[k]}</span>
+                </button>
+              ))}
+            </div>
+            <SearchInput value={q} onChange={setQ} placeholder="Sök tjänst…" />
+            {canJobs && (
+              <Button
+                variant="gradient"
+                className="sm:ml-auto"
+                onClick={() => setDialog({ open: true, job: null })}
               >
-                {label}
-                <span className="font-mono text-[11px] text-faint">{counts[k]}</span>
-              </button>
-            ))}
+                <Plus className="icon-rotate" /> Ny tjänst
+              </Button>
+            )}
           </div>
-          <SearchInput value={q} onChange={setQ} placeholder="Sök tjänst…" />
-          {canJobs && (
-            <Button
-              variant="gradient"
-              className="sm:ml-auto"
-              onClick={() => setDialog({ open: true, job: null })}
-            >
-              <Plus className="icon-rotate" /> Ny tjänst
-            </Button>
-          )}
         </div>
 
         {/* Desktop table */}

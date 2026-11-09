@@ -256,17 +256,19 @@ export function SearchInput({
   );
 }
 
-/** View title shown at the left of a page's toolbar, like "Medarbetare i <kund>" on Team. */
+/** View title shown above a page's toolbar, like "Kandidater <organisation>". */
 export function ViewLabel({
-  children,
+  title,
+  org,
   className,
 }: {
-  children: React.ReactNode;
+  title: string;
+  org?: string | undefined;
   className?: string;
 }) {
   return (
     <p className={cn("min-w-0 truncate text-[13px] text-muted-foreground", className)}>
-      <span className="font-semibold text-foreground">{children}</span>
+      {title} {org !== undefined && <span className="font-semibold text-foreground">{org}</span>}
     </p>
   );
 }

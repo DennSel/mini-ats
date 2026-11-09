@@ -150,7 +150,7 @@ export function AdminPage() {
   return (
     <div className="space-y-4">
       <div className="glass flex flex-col gap-2 rounded-2xl p-2.5 pl-4">
-        <ViewLabel>Admin</ViewLabel>
+        <ViewLabel title="Admin" />
         {/* Tabs: stacked vertically on smaller screens (flex-col), horizontal on xl (xl:flex-row) */}
         <div className="flex shrink-0 gap-1">
           {(

@@ -23,6 +23,7 @@ import {
 import {
   Avatar,
   NoActiveOrgState,
+  ViewLabel,
   WithSidePanel,
   useIsDesktop,
   usePersistentState,
@@ -164,10 +165,8 @@ export function TeamPage() {
     >
       <div>
         <div className="min-w-0">
-          <div className="glass mb-3 flex flex-col gap-2 rounded-2xl p-2 pl-4 sm:flex-row sm:items-center">
-            <p className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">
-              Medarbetare i <span className="font-semibold text-foreground">{activeOrg?.name}</span>
-            </p>
+          <div className="glass mb-3 flex flex-col gap-2 rounded-2xl p-2 pl-4">
+            <ViewLabel title="Medarbetare" org={activeOrg?.name} />
             <Button variant="gradient" className="w-full sm:w-auto" onClick={() => setOpen(true)}>
               <UserPlus /> Bjud in medarbetare
             </Button>
