@@ -19,13 +19,10 @@ const createUserInputSchema = z.object({
 export const createUser = createServerFn({ method: "POST" })
   .validator(createUserInputSchema)
   .handler(async ({ data }) => {
-    const supabaseUrl =
-      (import.meta.env["VITE_SUPABASE_URL"] as string | undefined) ||
-      process.env["VITE_SUPABASE_URL"] ||
-      defaultSupabaseUrl;
-    // Lovable reserves the SUPABASE_ prefix, so the key is stored as SB_SERVICE_ROLE_KEY there.
+    const supabaseUrl = process.env["VITE_SB_URL"] || defaultSupabaseUrl;
+    // Check SB_SERVICE_ROLE_KEY first because Lovable Cloud injects its own internal SUPABASE_SERVICE_ROLE_KEY.
     const serviceRoleKey =
-      process.env["SUPABASE_SERVICE_ROLE_KEY"] || process.env["SB_SERVICE_ROLE_KEY"];
+      process.env["SB_SERVICE_ROLE_KEY"] || process.env["SUPABASE_SERVICE_ROLE_KEY"];
 
     if (!supabaseUrl || !serviceRoleKey) {
       throw new Error("Serverkonfiguration saknas (SUPABASE_SERVICE_ROLE_KEY)");
