@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { decideCreateUser } from "./create-user-rules";
+import { supabaseUrl as defaultSupabaseUrl } from "./supabase";
 import type { OrgRole, Role } from "./types";
 
 const createUserInputSchema = z.object({
@@ -20,8 +21,11 @@ export const createUser = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const supabaseUrl =
       (import.meta.env["VITE_SUPABASE_URL"] as string | undefined) ||
-      process.env["VITE_SUPABASE_URL"];
-    const serviceRoleKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+      process.env["VITE_SUPABASE_URL"] ||
+      defaultSupabaseUrl;
+    // Lovable reserves the SUPABASE_ prefix, so the key is stored as SB_SERVICE_ROLE_KEY there.
+    const serviceRoleKey =
+      process.env["SUPABASE_SERVICE_ROLE_KEY"] || process.env["SB_SERVICE_ROLE_KEY"];
 
     if (!supabaseUrl || !serviceRoleKey) {
       throw new Error("Serverkonfiguration saknas (SUPABASE_SERVICE_ROLE_KEY)");

@@ -62,11 +62,11 @@ tag. All accounts and data in it are invented; never reuse those passwords anywh
 
 Copy `.env.example` to `.env` (ignored by git). Only public values ever live in `.env` files on disk:
 
-| Variable                        | Scope       | Purpose                                                               |
-| ------------------------------- | ----------- | --------------------------------------------------------------------- |
-| `VITE_SUPABASE_URL`             | client      | Supabase project URL (public)                                         |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | client      | publishable / anon key (public; access is restricted by RLS)          |
-| `SUPABASE_SERVICE_ROLE_KEY`     | server-only | used only in `src/lib/users.functions.ts` via platform runtime secret |
+| Variable                        | Scope       | Purpose                                                                                                  |
+| ------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`             | client      | Supabase project URL (public)                                                                            |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | client      | publishable / anon key (public; access is restricted by RLS)                                             |
+| `SUPABASE_SERVICE_ROLE_KEY`     | server-only | used only in `src/lib/users.functions.ts` via platform runtime secret (`SB_SERVICE_ROLE_KEY` on Lovable) |
 
 The secret key (service role / `sb_secret_…`) bypasses row level security. It exists only in
 Supabase and in Lovable's project settings — never on a local machine, in this repo, in code
