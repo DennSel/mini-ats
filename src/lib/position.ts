@@ -84,6 +84,7 @@ export interface ProfileRow {
   org_id: string | null;
   full_name: string;
   email: string;
+  job_ids?: string[] | null;
 }
 
 export interface JobRow {
@@ -126,6 +127,7 @@ export const toUser = (r: ProfileRow): User => ({
   role: r.role,
   orgRole: r.org_role,
   orgId: r.org_id,
+  ...(r.job_ids ? { jobIds: r.job_ids } : {}),
 });
 
 export const toJob = (r: JobRow): Job => ({
