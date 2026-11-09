@@ -68,6 +68,29 @@ async function countOrgOwners(
   return count ?? 0;
 }
 
+async function validateOrgJobIds(
+  sb: ReturnType<typeof getServiceClient>,
+  orgId: string | null,
+  jobIds: string[] | null | undefined,
+): Promise<string[] | null> {
+  if (jobIds === null || jobIds === undefined) return null;
+  const uniqueIds = Array.from(new Set(jobIds));
+  if (uniqueIds.length === 0) return [];
+  if (!orgId) {
+    throw new Error("Tjänsterna tillhör inte organisationen");
+  }
+  const { data: validJobs, error } = await sb
+    .from("jobs")
+    .select("id")
+    .eq("org_id", orgId)
+    .in("id", uniqueIds);
+  if (error) throw new Error(error.message);
+  if ((validJobs ?? []).length !== uniqueIds.length) {
+    throw new Error("Tjänsterna tillhör inte organisationen");
+  }
+  return uniqueIds;
+}
+
 const createUserInputSchema = z.object({
   accessToken: z.string().min(1),
   email: z.string().trim().email(),
@@ -77,6 +100,7 @@ const createUserInputSchema = z.object({
   role: z.enum(["admin", "customer"]).default("customer"),
   orgId: z.string().uuid().optional(),
   newOrgName: z.string().trim().min(1).optional(),
+  jobIds: z.array(z.string().uuid()).nullable().optional(),
 });
 
 export const createUser = createServerFn({ method: "POST" })
@@ -90,6 +114,7 @@ export const createUser = createServerFn({ method: "POST" })
       orgRole: data.orgRole,
       orgId: data.orgId,
       newOrgName: data.newOrgName,
+      jobIds: data.jobIds,
     });
     if (!d.ok) {
       throw new Error(d.reason);
@@ -108,6 +133,9 @@ export const createUser = createServerFn({ method: "POST" })
       createdOrgId = orgId;
     }
 
+    const effectiveOrgId = d.role === "admin" ? null : orgId;
+    const verifiedJobIds = await validateOrgJobIds(sb, effectiveOrgId, d.jobIds);
+
     const { data: created, error: e1 } = await sb.auth.admin.createUser({
       email: data.email,
       password: data.password,
@@ -122,9 +150,10 @@ export const createUser = createServerFn({ method: "POST" })
       id: created.user.id,
       role: d.role,
       org_role: d.orgRole,
-      org_id: d.role === "admin" ? null : orgId,
+      org_id: effectiveOrgId,
       full_name: data.fullName,
       email: data.email,
+      job_ids: verifiedJobIds,
     });
 
     if (e2) {
@@ -144,6 +173,7 @@ const updateUserInputSchema = z.object({
   role: z.enum(["admin", "customer"]).optional(),
   orgRole: z.enum(["owner", "member", "viewer"]).optional(),
   orgId: z.string().uuid().nullable().optional(),
+  jobIds: z.array(z.string().uuid()).nullable().optional(),
 });
 
 export const updateUser = createServerFn({ method: "POST" })
@@ -154,7 +184,7 @@ export const updateUser = createServerFn({ method: "POST" })
 
     const { data: targetRow } = await sb
       .from("profiles")
-      .select("id, full_name, email, role, org_role, org_id")
+      .select("id, full_name, email, role, org_role, org_id, job_ids")
       .eq("id", data.userId)
       .single();
 
@@ -169,6 +199,7 @@ export const updateUser = createServerFn({ method: "POST" })
       role: Role;
       org_role: OrgRole;
       org_id: string | null;
+      job_ids: string[] | null;
     };
 
     const target: TargetUser = {
@@ -178,6 +209,7 @@ export const updateUser = createServerFn({ method: "POST" })
       role: row.role,
       orgRole: row.org_role,
       orgId: row.org_id,
+      jobIds: row.job_ids,
     };
 
     const ownerCount = await countOrgOwners(sb, target.orgId);
@@ -190,6 +222,7 @@ export const updateUser = createServerFn({ method: "POST" })
         role: data.role,
         orgRole: data.orgRole,
         orgId: data.orgId,
+        jobIds: data.jobIds,
       },
       ownerCount,
     );
@@ -197,6 +230,8 @@ export const updateUser = createServerFn({ method: "POST" })
     if (!d.ok) {
       throw new Error(d.reason);
     }
+
+    const verifiedJobIds = await validateOrgJobIds(sb, d.orgId, d.jobIds);
 
     if (d.email !== target.email) {
       const { error: authUpdateErr } = await sb.auth.admin.updateUserById(target.id, {
@@ -214,6 +249,7 @@ export const updateUser = createServerFn({ method: "POST" })
         role: d.role,
         org_role: d.orgRole,
         org_id: d.orgId,
+        job_ids: verifiedJobIds,
       })
       .eq("id", target.id);
 

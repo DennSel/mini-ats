@@ -12,6 +12,7 @@ export type CreateInput = {
   orgRole: OrgRole;
   orgId?: string | undefined;
   newOrgName?: string | undefined;
+  jobIds?: string[] | null | undefined;
 };
 
 export type Decision =
@@ -22,13 +23,20 @@ export type Decision =
       orgRole: OrgRole;
       orgId: string | null;
       newOrgName?: string | undefined;
+      jobIds?: string[] | null | undefined;
     };
 
 export function decideCreateUser(me: Caller | null, input: CreateInput): Decision {
   if (!me) return { ok: false, reason: "Ej inloggad" };
   if (me.role === "admin") {
     if (input.role === "admin") {
-      return { ok: true, role: "admin", orgRole: "owner", orgId: null };
+      return {
+        ok: true,
+        role: "admin",
+        orgRole: "owner",
+        orgId: null,
+        ...(input.jobIds !== undefined ? { jobIds: null } : {}),
+      };
     }
     if (!input.orgId && !input.newOrgName) {
       return { ok: false, reason: "Organisation saknas" };
@@ -39,13 +47,24 @@ export function decideCreateUser(me: Caller | null, input: CreateInput): Decisio
       orgRole: input.orgRole,
       orgId: input.orgId ?? null,
       newOrgName: input.newOrgName,
+      ...(input.jobIds !== undefined
+        ? { jobIds: input.orgRole === "owner" ? null : input.jobIds }
+        : {}),
     };
   }
   if (me.orgRole !== "owner" || !me.orgId) {
     return { ok: false, reason: "Saknar behörighet" };
   }
   // Customer owners always create customer accounts in their own organisation, ignoring client role/orgId.
-  return { ok: true, role: "customer", orgRole: input.orgRole, orgId: me.orgId };
+  return {
+    ok: true,
+    role: "customer",
+    orgRole: input.orgRole,
+    orgId: me.orgId,
+    ...(input.jobIds !== undefined
+      ? { jobIds: input.orgRole === "owner" ? null : input.jobIds }
+      : {}),
+  };
 }
 
 export type TargetUser = {
@@ -55,6 +74,7 @@ export type TargetUser = {
   role: "admin" | "customer";
   orgRole: OrgRole;
   orgId: string | null;
+  jobIds?: string[] | null | undefined;
 };
 
 export type UpdateInput = {
@@ -63,6 +83,7 @@ export type UpdateInput = {
   role?: "admin" | "customer" | undefined;
   orgRole?: OrgRole | undefined;
   orgId?: string | null | undefined;
+  jobIds?: string[] | null | undefined;
 };
 
 export type UpdateDecision =
@@ -74,6 +95,7 @@ export type UpdateDecision =
       role: "admin" | "customer";
       orgRole: OrgRole;
       orgId: string | null;
+      jobIds?: string[] | null | undefined;
     };
 
 export function decideUpdateUser(
@@ -103,6 +125,16 @@ export function decideUpdateUser(
       return { ok: false, reason: "Organisationen måste ha minst en ägare" };
     }
 
+    const hasJobIds = patch.jobIds !== undefined || target.jobIds !== undefined;
+    const nextJobIds =
+      nextRole === "admin" || nextOrgRole === "owner"
+        ? null
+        : nextOrgId !== target.orgId
+          ? (patch.jobIds ?? null)
+          : patch.jobIds !== undefined
+            ? patch.jobIds
+            : (target.jobIds ?? null);
+
     return {
       ok: true,
       fullName: patch.fullName ?? target.fullName,
@@ -110,6 +142,7 @@ export function decideUpdateUser(
       role: nextRole,
       orgRole: nextOrgRole,
       orgId: nextOrgId,
+      ...(hasJobIds || nextOrgId !== target.orgId ? { jobIds: nextJobIds } : {}),
     };
   }
 
@@ -138,6 +171,14 @@ export function decideUpdateUser(
     return { ok: false, reason: "Organisationen måste ha minst en ägare" };
   }
 
+  const hasJobIds = patch.jobIds !== undefined || target.jobIds !== undefined;
+  const nextJobIds =
+    nextOrgRole === "owner"
+      ? null
+      : patch.jobIds !== undefined
+        ? patch.jobIds
+        : (target.jobIds ?? null);
+
   return {
     ok: true,
     fullName: target.fullName,
@@ -145,6 +186,7 @@ export function decideUpdateUser(
     role: "customer",
     orgRole: nextOrgRole,
     orgId: me.orgId,
+    ...(hasJobIds ? { jobIds: nextJobIds } : {}),
   };
 }
 

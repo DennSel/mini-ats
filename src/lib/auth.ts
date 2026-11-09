@@ -8,6 +8,7 @@ interface ProfileRow {
   org_id: string | null;
   full_name: string;
   email: string;
+  job_ids?: string[] | null;
 }
 
 export const signIn = (email: string, password: string) =>
@@ -46,6 +47,7 @@ export async function loadUser(): Promise<User | null> {
           role: p.role,
           orgRole: p.org_role,
           orgId: p.org_id,
+          ...(p.job_ids ? { jobIds: p.job_ids } : {}),
         };
       })(),
       timeoutPromise,

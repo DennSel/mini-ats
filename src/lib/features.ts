@@ -3,5 +3,5 @@ export const FEATURES = {
   teamRemoveMember: true, // 09 #13
   adminEditUser: true, // 09 #14
   adminDeleteUser: true, // 09 #14
-  jobAccess: false, // 09 #16
+  jobAccess: true, // 09 #16
 } as const;
