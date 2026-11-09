@@ -23,3 +23,4 @@
 ## Conventions
 
 - Everything in the project is written in English except the UI: code comments, commit messages, docs, issues and pull requests. UI copy, labels, aria-labels and other user-facing strings stay in Swedish (the product language).
+- Before every commit: show the human what will be committed (git status, diff, proposed message). Commit only after approval.
