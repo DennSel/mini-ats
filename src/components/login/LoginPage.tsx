@@ -3,7 +3,8 @@ import { useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, LogIn, Shield, User as UserIcon } from "lucide-react";
+import { Eye, EyeOff, LogIn } from "lucide-react";
+import { signIn } from "@/lib/auth";
 import { useAts } from "@/lib/ats-store";
 import { homePathFor } from "@/lib/ats-logic";
 import { Button } from "@/components/ui/button";
@@ -16,33 +17,32 @@ const schema = z.object({
 type Values = z.infer<typeof schema>;
 
 export function LoginPage() {
-  const { login } = useAts();
+  const { refreshUser } = useAts();
   const navigate = useNavigate();
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
-    setValue,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<Values>({
     resolver: zodResolver(schema),
     defaultValues: { email: "", password: "" },
   });
 
-  const onSubmit = (v: Values) => {
-    const user = login(v.email, v.password);
-    if (!user) {
+  const onSubmit = async (v: Values) => {
+    setError(null);
+    const { error: signInError } = await signIn(v.email.trim(), v.password);
+    if (signInError) {
       setError("Fel e-postadress eller lösenord.");
       return;
     }
+    const user = await refreshUser();
+    if (!user) {
+      setError("Ingen profil hittades för kontot.");
+      return;
+    }
     navigate({ to: homePathFor(user) });
-  };
-
-  const fill = (email: string, password: string) => {
-    setValue("email", email, { shouldValidate: true });
-    setValue("password", password, { shouldValidate: true });
-    setError(null);
   };
 
   return (
@@ -96,32 +96,16 @@ export function LoginPage() {
               {error}
             </div>
           )}
-          <Button type="submit" variant="gradient" size="lg" className="w-full">
+          <Button
+            type="submit"
+            variant="gradient"
+            size="lg"
+            className="w-full"
+            disabled={isSubmitting}
+          >
             <LogIn /> Logga in
           </Button>
         </form>
-
-        <div className="my-6 flex items-center gap-3">
-          <div className="h-px flex-1 bg-border" />
-          <span className="label-caps text-faint">Demo (endast mock)</span>
-          <div className="h-px flex-1 bg-border" />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => fill("admin@kandsys.se", "admin123")}
-          >
-            <Shield className="text-primary" /> Admin
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => fill("anna@nordvik.se", "kund123")}
-          >
-            <UserIcon className="text-accent-3" /> Kund
-          </Button>
-        </div>
       </div>
     </div>
   );
