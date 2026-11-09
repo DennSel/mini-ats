@@ -110,7 +110,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch(() => {
-        if (active) setAuthReady(true);
+        // Keep authReady false on timeout so AuthLoadingScreen can offer a retry button.
       });
 
     const {
@@ -121,12 +121,20 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         setAuthReady(true);
         return;
       }
-      void loadUser().then((u) => {
-        if (active) {
-          setCurrentUser(u);
-          setAuthReady(true);
-        }
-      });
+      // Defer Supabase queries outside onAuthStateChange to avoid deadlocking navigator.locks.
+      setTimeout(() => {
+        if (!active) return;
+        void loadUser()
+          .then((u) => {
+            if (active) {
+              setCurrentUser(u);
+              setAuthReady(true);
+            }
+          })
+          .catch(() => {
+            // Handled by AuthLoadingScreen watchdog retry.
+          });
+      }, 0);
     });
 
     return () => {

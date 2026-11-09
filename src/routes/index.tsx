@@ -1,4 +1,6 @@
 import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { AuthLoadingScreen } from "@/components/layout/AuthLoadingScreen";
+import { homePathFor } from "@/lib/ats-logic";
 import { useAts } from "@/lib/ats-store";
 
 export const Route = createFileRoute("/")({
@@ -16,6 +18,9 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { currentUser } = useAts();
-  return <Navigate to={currentUser ? "/board" : "/login"} replace />;
+  const { currentUser, authReady } = useAts();
+  if (!authReady) {
+    return <AuthLoadingScreen />;
+  }
+  return <Navigate to={homePathFor(currentUser)} replace />;
 }
