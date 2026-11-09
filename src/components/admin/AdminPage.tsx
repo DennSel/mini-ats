@@ -337,7 +337,7 @@ export function AdminPage() {
                             size="icon"
                             variant="ghost"
                             aria-label={`Ta bort ${u.name}`}
-                            disabled={u.id === currentUser?.id || isLastOwner(users, u.id)}
+                            disabled={u.id === currentUser?.id}
                             className="text-faint hover:bg-error-bg hover:text-error"
                             onClick={() => setRemoveUser(u)}
                           >
@@ -403,9 +403,7 @@ export function AdminPage() {
                         className="text-faint hover:bg-error-bg hover:text-error"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (memberCount(o.id) > 0)
-                            toast.error("Flytta eller ta bort organisationens användare först");
-                          else setRemoveOrg(o);
+                          setRemoveOrg(o);
                         }}
                       >
                         <Trash2 />
@@ -451,7 +449,21 @@ export function AdminPage() {
               <AlertDialogHeader>
                 <AlertDialogTitle className="font-display">Ta bort organisation?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  {removeOrg?.name} och alla dess tjänster och kandidater tas bort permanent.
+                  {removeOrg && memberCount(removeOrg.id) > 0 ? (
+                    <>
+                      <span className="font-semibold text-foreground">{removeOrg.name}</span>, dess{" "}
+                      <span className="font-semibold text-foreground">
+                        {memberCount(removeOrg.id)}{" "}
+                        {memberCount(removeOrg.id) === 1 ? "användare" : "användare"}
+                      </span>{" "}
+                      och alla tillhörande tjänster och kandidater tas bort permanent.
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-semibold text-foreground">{removeOrg?.name}</span> och
+                      alla dess tjänster och kandidater tas bort permanent.
+                    </>
+                  )}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

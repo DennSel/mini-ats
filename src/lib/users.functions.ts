@@ -311,3 +311,38 @@ export const deleteUser = createServerFn({ method: "POST" })
 
     return { id: row.id };
   });
+
+const deleteOrgInputSchema = z.object({
+  accessToken: z.string().min(1),
+  orgId: z.string().uuid(),
+});
+
+export const deleteOrg = createServerFn({ method: "POST" })
+  .validator(deleteOrgInputSchema)
+  .handler(async ({ data }) => {
+    const sb = getServiceClient();
+    const me = await resolveCaller(sb, data.accessToken);
+    if (!me || me.role !== "admin") {
+      throw new Error("Endast administratörer kan ta bort organisationer");
+    }
+
+    const { data: orgProfiles, error: fetchErr } = await sb
+      .from("profiles")
+      .select("id")
+      .eq("org_id", data.orgId);
+    if (fetchErr) throw new Error(fetchErr.message);
+
+    if (orgProfiles && orgProfiles.length > 0) {
+      for (const p of orgProfiles) {
+        if (p.id !== me.id) {
+          const { error: delErr } = await sb.auth.admin.deleteUser(p.id);
+          if (delErr) throw new Error(delErr.message);
+        }
+      }
+    }
+
+    const { error: orgDelErr } = await sb.from("orgs").delete().eq("id", data.orgId);
+    if (orgDelErr) throw new Error(orgDelErr.message);
+
+    return { id: data.orgId };
+  });

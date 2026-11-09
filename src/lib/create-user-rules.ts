@@ -214,7 +214,12 @@ export function decideDeleteUser(
     return { ok: false, reason: "Du kan inte ta bort dig själv" };
   }
 
-  if (target.role === "customer" && target.orgRole === "owner" && ownerCountInTargetOrg <= 1) {
+  if (
+    me.role !== "admin" &&
+    target.role === "customer" &&
+    target.orgRole === "owner" &&
+    ownerCountInTargetOrg <= 1
+  ) {
     return { ok: false, reason: "Organisationen måste ha minst en ägare" };
   }
 
