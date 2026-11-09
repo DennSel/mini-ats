@@ -211,7 +211,10 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from("orgs").insert({ name });
       if (error) throw error;
     },
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["orgs"] }),
+    onSuccess: () => {
+      toast.success("Organisationen skapades");
+      void qc.invalidateQueries({ queryKey: ["orgs"] });
+    },
     onError: () => toast.error("Kunde inte skapa organisationen"),
   });
 
@@ -220,7 +223,10 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.from("orgs").update({ name: v.name }).eq("id", v.id);
       if (error) throw error;
     },
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["orgs"] }),
+    onSuccess: () => {
+      toast.success("Namnet uppdaterades");
+      void qc.invalidateQueries({ queryKey: ["orgs"] });
+    },
     onError: () => toast.error("Kunde inte uppdatera organisationen"),
   });
 
@@ -230,6 +236,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
     },
     onSuccess: (_data, id) => {
+      toast.success("Organisationen togs bort");
       setSelectedOrgId((s) =>
         s === id ? (organizations.find((o) => o.id !== id)?.id ?? null) : s,
       );

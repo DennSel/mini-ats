@@ -423,7 +423,6 @@ export function AdminPage() {
                   className="rounded-xl bg-destructive text-on-primary hover:bg-destructive/90"
                   onClick={() => {
                     if (removeOrg) deleteOrg(removeOrg.id);
-                    toast.success("Organisationen togs bort");
                     setRemoveOrg(null);
                   }}
                 >
@@ -455,6 +454,11 @@ function UserFields({
   } = form;
   const role = watch("role");
   const orgId = watch("orgId");
+  useEffect(() => {
+    if (allowNewOrg && organizations.length === 0 && !orgId) {
+      setValue("orgId", NEW_ORG);
+    }
+  }, [allowNewOrg, organizations.length, orgId, setValue]);
   return (
     <>
       <div>
@@ -651,7 +655,6 @@ function OrgDialog({
     }
     if (state.org) updateOrg(state.org.id, n);
     else createOrg(n);
-    toast.success(state.org ? "Namnet uppdaterades" : "Organisationen skapades");
     onClose();
   };
 
@@ -719,7 +722,8 @@ function NewOrgForm({ onDone }: { onDone: () => void }) {
       return;
     }
     createOrg(n);
-    toast.success("Organisationen skapades");
+    setName("");
+    setError(undefined);
     cancel();
   };
   return (

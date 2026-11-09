@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   Avatar,
+  NoActiveOrgState,
   WithSidePanel,
   useIsDesktop,
   usePersistentState,
@@ -152,6 +153,10 @@ export function TeamPage() {
       </Button>
     </form>
   );
+
+  if (!activeOrgId || !activeOrg) {
+    return <NoActiveOrgState />;
+  }
 
   return (
     <WithSidePanel

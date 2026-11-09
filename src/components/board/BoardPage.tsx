@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SearchInput, ViewLabel, stageStyles } from "@/components/shared";
+import { NoActiveOrgState, SearchInput, ViewLabel, stageStyles } from "@/components/shared";
 import { cn } from "@/lib/utils";
 import { CandidateCardView, SortableCandidateCard } from "./CandidateCard";
 import { WithCandidatePanel, useIsDesktop } from "./CandidatePanel";
@@ -116,6 +116,10 @@ export function BoardPage({ job, q }: { job: string; q: string }) {
 
   const addInline = desktop && dialog.open && !dialog.candidate;
   const closeDialog = (open: boolean) => setDialog((d) => ({ ...d, open }));
+
+  if (!activeOrgId) {
+    return <NoActiveOrgState />;
+  }
 
   return (
     <WithCandidatePanel

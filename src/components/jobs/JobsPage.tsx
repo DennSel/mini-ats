@@ -4,7 +4,7 @@ import { Briefcase, Kanban, Lock, MapPin, Pencil, Plus, Unlock } from "lucide-re
 import { useAts } from "@/lib/ats-store";
 import type { Job } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
-import { SearchInput, StatusPill, ViewLabel } from "@/components/shared";
+import { NoActiveOrgState, SearchInput, StatusPill, ViewLabel } from "@/components/shared";
 import { cn } from "@/lib/utils";
 import { JobDialog } from "./JobDialog";
 import { WithSidePanel, useIsDesktop, usePersistentState } from "@/components/shared";
@@ -72,6 +72,11 @@ export function JobsPage() {
   );
 
   const closeDialog = () => setDialog((d) => ({ ...d, open: false }));
+
+  if (!activeOrgId) {
+    return <NoActiveOrgState />;
+  }
+
   return (
     <WithSidePanel
       side={
