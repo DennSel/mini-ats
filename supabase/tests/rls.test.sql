@@ -1,6 +1,9 @@
 begin;
 select plan(10);
 
+-- Start from a clean slate inside the rolled-back test transaction even if seed.sql ran
+truncate table candidates, jobs, profiles, orgs cascade;
+
 -- Test fixtures (inserted as superuser, bypassing RLS)
 insert into orgs (id, name) values
   ('11111111-1111-1111-1111-111111111111', 'Org A'),
