@@ -278,19 +278,48 @@ export function AdminPage() {
                         </div>
                         <div className="truncate text-[11px] text-muted-foreground">{u.email}</div>
                       </div>
-                      <div className="col-span-3 row-start-2 mt-1 sm:contents sm:mt-0">
-                        {u.role === "customer" && FEATURES.teamRoleChange ? (
-                          <OrgRoleSelect
-                            value={u.orgRole}
-                            onChange={(r) => updateUser(u.id, { orgRole: r })}
-                            className="w-full sm:w-28"
-                          />
+                      <div className="col-span-3 row-start-2 mt-1 grid grid-cols-2 gap-2 sm:contents sm:mt-0">
+                        {u.role === "admin" ? (
+                          <div className="col-span-2 flex h-10 w-full items-center rounded-xl border border-error/30 bg-error-bg px-3 text-[12px] font-semibold text-error sm:w-28">
+                            Admin
+                          </div>
                         ) : (
-                          <RolePill user={u} />
+                          <>
+                            {FEATURES.teamRoleChange ? (
+                              <OrgRoleSelect
+                                value={u.orgRole}
+                                onChange={(r) => updateUser(u.id, { orgRole: r })}
+                                className="w-full sm:w-28"
+                              />
+                            ) : (
+                              <RolePill user={u} />
+                            )}
+                            {FEATURES.adminEditUser ? (
+                              <Select
+                                value={u.orgId ?? ""}
+                                onValueChange={(orgId) => updateUser(u.id, { orgId })}
+                              >
+                                <SelectTrigger
+                                  className="h-10 w-full rounded-xl border-border bg-surface-low sm:w-44"
+                                  aria-label={`Organisation för ${u.name}`}
+                                >
+                                  <SelectValue>{orgName(u.orgId)}</SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {organizations.map((o) => (
+                                    <SelectItem key={o.id} value={o.id}>
+                                      {o.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <div className="hidden truncate text-[13px] text-muted-foreground md:block md:w-44">
+                                {orgName(u.orgId)}
+                              </div>
+                            )}
+                          </>
                         )}
-                        <div className="hidden truncate text-[13px] text-muted-foreground md:block md:w-44">
-                          {orgName(u.orgId)}
-                        </div>
                       </div>
                       <div className="flex gap-1">
                         {FEATURES.adminEditUser && (
