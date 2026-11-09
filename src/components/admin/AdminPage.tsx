@@ -80,7 +80,8 @@ const emptyUser: UserValues = {
 };
 
 export function AdminPage() {
-  const { users, organizations, currentUser, createUser, deleteUser, deleteOrg } = useAts();
+  const { users, organizations, currentUser, createUser, updateUser, deleteUser, deleteOrg } =
+    useAts();
   const desktop = useIsDesktop(640);
   const [tab, setTab] = usePersistentState<"users" | "orgs">("admin.tab", "users");
   const [panels, setPanels] = usePersistentState<{ user: boolean | null; org: boolean | null }>(
@@ -268,20 +269,57 @@ export function AdminPage() {
                   {visibleUsers.map((u) => (
                     <div
                       key={u.id}
-                      className="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3 transition-colors last:border-0 hover:bg-surface-high/50 sm:flex-nowrap"
+                      className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border-b border-border px-4 py-3 transition-colors last:border-0 hover:bg-surface-high/50 sm:flex"
                     >
                       <Avatar name={u.name} size="sm" />
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 sm:flex-1">
                         <div className="truncate font-display text-[13px] font-semibold">
                           {u.name}
                         </div>
                         <div className="truncate text-[11px] text-muted-foreground">{u.email}</div>
                       </div>
-                      <div className="w-28">
-                        <RolePill user={u} />
-                      </div>
-                      <div className="hidden w-44 truncate text-[13px] text-muted-foreground md:block">
-                        {orgName(u.orgId)}
+                      <div className="col-span-3 row-start-2 mt-1 grid grid-cols-2 gap-2 sm:contents sm:mt-0">
+                        {u.role === "admin" ? (
+                          <div className="col-span-2 flex h-10 w-full items-center rounded-xl border border-error/30 bg-error-bg px-3 text-[12px] font-semibold text-error sm:w-28">
+                            Admin
+                          </div>
+                        ) : (
+                          <>
+                            {FEATURES.teamRoleChange ? (
+                              <OrgRoleSelect
+                                value={u.orgRole}
+                                onChange={(r) => updateUser(u.id, { orgRole: r })}
+                                className="w-full sm:w-28"
+                              />
+                            ) : (
+                              <RolePill user={u} />
+                            )}
+                            {FEATURES.adminEditUser ? (
+                              <Select
+                                value={u.orgId ?? ""}
+                                onValueChange={(orgId) => updateUser(u.id, { orgId })}
+                              >
+                                <SelectTrigger
+                                  className="h-10 w-full rounded-xl border-border bg-surface-low sm:w-44"
+                                  aria-label={`Organisation för ${u.name}`}
+                                >
+                                  <SelectValue>{orgName(u.orgId)}</SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {organizations.map((o) => (
+                                    <SelectItem key={o.id} value={o.id}>
+                                      {o.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            ) : (
+                              <div className="hidden truncate text-[13px] text-muted-foreground md:block md:w-44">
+                                {orgName(u.orgId)}
+                              </div>
+                            )}
+                          </>
+                        )}
                       </div>
                       <div className="flex gap-1">
                         {FEATURES.adminEditUser && (
