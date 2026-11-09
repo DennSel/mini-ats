@@ -78,6 +78,61 @@ export function CandidatesPage() {
     );
   };
 
+  const stageBadge = (c: Candidate) => {
+    const stage = STAGES.find((s) => s.id === c.stage);
+    if (!c.jobId) {
+      return (
+        <span className="shrink-0 rounded-full border border-border bg-surface-high px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
+          Vilande
+        </span>
+      );
+    }
+    return (
+      stage && (
+        <span
+          className={cn(
+            "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+            stageStyles[c.stage].pill,
+          )}
+        >
+          {stage.label}
+        </span>
+      )
+    );
+  };
+
+  const sendMenu = (c: Candidate) =>
+    canMove ? (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-primary/30 text-primary"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Send /> Skicka till tjänst
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuLabel className="text-[11px]">Skicka till</DropdownMenuLabel>
+          {orgJobs
+            .filter((j) => j.status === "open" && j.id !== c.jobId)
+            .map((j) => (
+              <DropdownMenuItem key={j.id} onSelect={() => send(c, j.id)}>
+                {j.title}
+              </DropdownMenuItem>
+            ))}
+          {c.jobId && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => send(c, null)}>Gör vilande</DropdownMenuItem>
+            </>
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ) : null;
+
   const addInline = desktop && dialog.open && !dialog.candidate;
   const closeDialog = (open: boolean) => setDialog((d) => ({ ...d, open }));
 
@@ -110,7 +165,7 @@ export function CandidatesPage() {
         <ViewLabel className="md:pr-1">Kandidater</ViewLabel>
         <Select value={jobFilter} onValueChange={setJobFilter}>
           <SelectTrigger
-            className="h-9 rounded-xl border-border bg-surface-low md:w-64"
+            className="h-9 rounded-xl border-border bg-surface-low md:w-64 md:min-w-36"
             aria-label="Filtrera på tjänst"
           >
             <SelectValue />
@@ -127,7 +182,7 @@ export function CandidatesPage() {
         </Select>
         <Select value={sort} onValueChange={(v) => setSort(v as typeof sort)}>
           <SelectTrigger
-            className="h-9 rounded-xl border-border bg-surface-low md:w-44"
+            className="h-9 rounded-xl border-border bg-surface-low md:w-44 md:min-w-32"
             aria-label="Sortera"
           >
             <SelectValue />
@@ -149,7 +204,7 @@ export function CandidatesPage() {
         {canManage && (
           <Button
             variant="gradient"
-            className="md:ml-auto"
+            className="shrink-0 md:ml-auto"
             onClick={() => setDialog({ open: true, candidate: null })}
           >
             <Plus className="icon-rotate" /> Ny kandidat
@@ -157,88 +212,97 @@ export function CandidatesPage() {
         )}
       </div>
 
-      <div className="glass-card mt-4 overflow-hidden rounded-2xl">
-        {visible.map((c) => {
-          const stage = STAGES.find((s) => s.id === c.stage);
-          return (
-            <div
-              key={c.id}
-              onClick={() => setSelectedId(c.id)}
-              className={cn(
-                "flex cursor-pointer flex-wrap items-center gap-3 border-b border-border px-4 py-3 transition-colors last:border-0 hover:bg-surface-high/60 sm:flex-nowrap",
-                selectedId === c.id && "bg-surface-high/80",
-              )}
-            >
-              <Avatar name={c.name} size="sm" />
-              <div className="min-w-0 flex-1">
-                <div className="truncate font-display text-[13px] font-semibold">{c.name}</div>
-                <div className="truncate text-[11px] text-muted-foreground">
-                  {c.email || c.phone || "–"}
-                </div>
-              </div>
-              <div className="flex min-w-0 items-center gap-2 sm:w-64">
-                {c.jobId ? (
-                  <>
-                    <span className="truncate text-[12px] text-muted-foreground">
-                      {jobTitle(c.jobId)}
-                    </span>
-                    {stage && (
-                      <span
-                        className={cn(
-                          "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold",
-                          stageStyles[c.stage].pill,
-                        )}
-                      >
-                        {stage.label}
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <span className="rounded-full border border-border bg-surface-high px-2 py-0.5 text-[10px] font-semibold text-muted-foreground">
-                    Vilande
-                  </span>
+      {/* Desktop table with column headers, like the jobs table */}
+      <div className="glass-card mt-4 hidden overflow-x-auto rounded-2xl md:block">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b border-border label-caps text-faint">
+              <th className="px-4 py-3 font-bold">Kandidat</th>
+              <th className="px-4 py-3 font-bold">Tjänst</th>
+              <th className="w-28 px-4 py-3 font-bold">Datum</th>
+              {canMove && <th className="px-4 py-3 text-right font-bold">Åtgärd</th>}
+            </tr>
+          </thead>
+          <tbody>
+            {visible.map((c) => (
+              <tr
+                key={c.id}
+                onClick={() => setSelectedId(c.id)}
+                className={cn(
+                  "cursor-pointer border-b border-border last:border-0 transition hover:bg-surface-high/60",
+                  selectedId === c.id && "bg-surface-high/80",
                 )}
-              </div>
-              <span className="hidden font-mono text-[10px] text-faint md:block">
-                {c.createdAt}
-              </span>
-              {canMove && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-primary/30 text-primary"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Send /> Skicka till tjänst
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                    <DropdownMenuLabel className="text-[11px]">Skicka till</DropdownMenuLabel>
-                    {orgJobs
-                      .filter((j) => j.status === "open" && j.id !== c.jobId)
-                      .map((j) => (
-                        <DropdownMenuItem key={j.id} onSelect={() => send(c, j.id)}>
-                          {j.title}
-                        </DropdownMenuItem>
-                      ))}
-                    {c.jobId && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => send(c, null)}>
-                          Gör vilande
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-            </div>
-          );
-        })}
+              >
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar name={c.name} size="sm" />
+                    <div className="min-w-0">
+                      <div className="truncate font-display text-[13px] font-semibold">
+                        {c.name}
+                      </div>
+                      <div className="truncate text-[11px] text-muted-foreground">
+                        {c.email || c.phone || "–"}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    <span className="min-w-0 truncate text-[12px] text-muted-foreground">
+                      {c.jobId ? jobTitle(c.jobId) : "–"}
+                    </span>
+                    {stageBadge(c)}
+                  </div>
+                </td>
+                <td className="px-4 py-3 font-mono text-[10px] text-faint">{c.createdAt}</td>
+                {canMove && <td className="px-4 py-3 text-right">{sendMenu(c)}</td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
         {visible.length === 0 && (
           <p className="p-8 text-center text-muted-foreground">Inga kandidater hittades.</p>
+        )}
+      </div>
+
+      {/* Mobile cards, like the jobs page */}
+      <div className="mt-4 space-y-3 md:hidden">
+        {visible.map((c) => (
+          <div
+            key={c.id}
+            onClick={() => setSelectedId(c.id)}
+            className={cn(
+              "glass-card cursor-pointer rounded-2xl p-4 transition-colors hover:bg-surface-high/60",
+              selectedId === c.id && "bg-surface-high/80",
+            )}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                <Avatar name={c.name} size="sm" />
+                <div className="min-w-0">
+                  <div className="truncate font-display text-[13px] font-semibold">{c.name}</div>
+                  <div className="truncate text-[11px] text-muted-foreground">
+                    {c.email || c.phone || "–"}
+                  </div>
+                </div>
+              </div>
+              {stageBadge(c)}
+            </div>
+            <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
+              <span className="min-w-0 truncate text-[12px] text-muted-foreground">
+                {c.jobId ? jobTitle(c.jobId) : "Vilande"}
+              </span>
+              <span className="ml-auto shrink-0 font-mono text-[10px] text-faint">
+                {c.createdAt}
+              </span>
+            </div>
+            {canMove && <div className="mt-2">{sendMenu(c)}</div>}
+          </div>
+        ))}
+        {visible.length === 0 && (
+          <div className="glass-card rounded-2xl">
+            <p className="p-8 text-center text-muted-foreground">Inga kandidater hittades.</p>
+          </div>
         )}
       </div>
 
