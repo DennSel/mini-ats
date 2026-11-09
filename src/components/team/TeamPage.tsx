@@ -35,6 +35,7 @@ import { JobAccessMenu } from "./JobAccessMenu";
 const schema = z.object({
   name: z.string().trim().min(2, "Ange namn (minst 2 tecken)").max(100),
   email: z.string().trim().min(1, "Ange e-postadress").email("Ogiltig e-postadress").max(255),
+  password: z.string().min(8, "Lösenordet måste vara minst 8 tecken").max(100),
   orgRole: z.enum(["owner", "member", "viewer"]),
 });
 type Values = z.infer<typeof schema>;
@@ -58,7 +59,7 @@ export function TeamPage() {
     formState: { errors },
   } = useForm<Values>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", email: "", orgRole: "member" },
+    defaultValues: { name: "", email: "", password: "", orgRole: "member" },
   });
   const inviteRole = watch("orgRole");
 
@@ -71,14 +72,14 @@ export function TeamPage() {
     createUser({
       name: v.name,
       email: v.email,
+      password: v.password,
       role: "customer",
       orgRole: v.orgRole,
       orgId: activeOrgId,
       ...(v.orgRole !== "owner" && inviteJobs ? { jobIds: inviteJobs } : {}),
     });
     setInviteJobs(undefined);
-    toast.success(`${v.name} bjöds in`);
-    reset({ name: "", email: "", orgRole: "member" });
+    reset({ name: "", email: "", password: "", orgRole: "member" });
     setOpen(false);
   };
 
@@ -111,6 +112,20 @@ export function TeamPage() {
         </label>
         <input id="t-email" type="email" className={inputClass} {...register("email")} />
         <FieldError message={errors.email?.message} />
+      </div>
+      <div>
+        <label htmlFor="t-password" className={labelClass}>
+          Tillfälligt lösenord
+        </label>
+        <input
+          id="t-password"
+          type="password"
+          autoComplete="new-password"
+          placeholder="Minst 8 tecken"
+          className={inputClass}
+          {...register("password")}
+        />
+        <FieldError message={errors.password?.message} />
       </div>
       <div>
         <span className={labelClass}>Roll</span>
