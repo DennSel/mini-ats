@@ -299,7 +299,7 @@ export function AdminPage() {
                             size="icon"
                             variant="ghost"
                             aria-label={`Ta bort ${u.name}`}
-                            disabled={u.id === currentUser?.id}
+                            disabled={u.id === currentUser?.id || isLastOwner(users, u.id)}
                             className="text-faint hover:bg-error-bg hover:text-error"
                             onClick={() => setRemoveUser(u)}
                           >
@@ -399,7 +399,6 @@ export function AdminPage() {
                   className="rounded-xl bg-destructive text-on-primary hover:bg-destructive/90"
                   onClick={() => {
                     if (removeUser) deleteUser(removeUser.id);
-                    toast.success("Användaren togs bort");
                     setRemoveUser(null);
                   }}
                 >
@@ -600,7 +599,6 @@ function EditUserDialog({ user, onClose }: { user: User | null; onClose: () => v
       orgRole: v.orgRole,
       orgId: v.role === "admin" ? null : v.orgId,
     });
-    toast.success("Användaren uppdaterades");
     onClose();
   };
 
