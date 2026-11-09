@@ -152,7 +152,7 @@ export function CandidatesPage() {
             className="md:ml-auto"
             onClick={() => setDialog({ open: true, candidate: null })}
           >
-            <Plus className="icon-rotate" /> Lägg till kandidat
+            <Plus className="icon-rotate" /> Ny kandidat
           </Button>
         )}
       </div>

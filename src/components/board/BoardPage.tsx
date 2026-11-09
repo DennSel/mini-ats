@@ -189,7 +189,7 @@ export function BoardPage({ job, q }: { job: string; q: string }) {
                 className="md:flex-none"
                 onClick={() => setDialog({ open: true, candidate: null })}
               >
-                <Plus className="icon-rotate" /> Lägg till kandidat
+                <Plus className="icon-rotate" /> Ny kandidat
               </Button>
             )}
           </div>
