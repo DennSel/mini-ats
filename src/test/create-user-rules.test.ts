@@ -138,6 +138,79 @@ describe("decideCreateUser", () => {
   });
 });
 
+describe("decideCreateUser job access (slice 16)", () => {
+  it("admins and owners are never created with restricted jobIds", () => {
+    expect(
+      decideCreateUser(adminCaller, { role: "admin", orgRole: "owner", jobIds: ["job-1"] }),
+    ).toEqual({
+      ok: true,
+      role: "admin",
+      orgRole: "owner",
+      orgId: null,
+      jobIds: null,
+    });
+    expect(
+      decideCreateUser(ownerCaller, { role: "customer", orgRole: "owner", jobIds: ["job-1"] }),
+    ).toEqual({
+      ok: true,
+      role: "customer",
+      orgRole: "owner",
+      orgId: "org-nordvik",
+      jobIds: null,
+    });
+    expect(
+      decideCreateUser(adminCaller, {
+        role: "customer",
+        orgRole: "owner",
+        orgId: "org-nordvik",
+        jobIds: ["job-1"],
+      }),
+    ).toEqual({
+      ok: true,
+      role: "customer",
+      orgRole: "owner",
+      orgId: "org-nordvik",
+      jobIds: null,
+    });
+  });
+
+  it("customer members and viewers are created with the requested jobIds", () => {
+    expect(
+      decideCreateUser(ownerCaller, {
+        role: "customer",
+        orgRole: "member",
+        jobIds: ["job-1", "job-2"],
+      }),
+    ).toEqual({
+      ok: true,
+      role: "customer",
+      orgRole: "member",
+      orgId: "org-nordvik",
+      jobIds: ["job-1", "job-2"],
+    });
+    expect(
+      decideCreateUser(adminCaller, {
+        role: "customer",
+        orgRole: "viewer",
+        orgId: "org-nordvik",
+        jobIds: ["job-1"],
+      }),
+    ).toEqual({
+      ok: true,
+      role: "customer",
+      orgRole: "viewer",
+      orgId: "org-nordvik",
+      jobIds: ["job-1"],
+    });
+  });
+
+  it("decisions without jobIds in the input carry no jobIds key", () => {
+    const res = decideCreateUser(ownerCaller, { role: "customer", orgRole: "viewer" });
+    expect(res).toEqual({ ok: true, role: "customer", orgRole: "viewer", orgId: "org-nordvik" });
+    expect("jobIds" in res).toBe(false);
+  });
+});
+
 describe("decideUpdateUser (slices 13 & 14)", () => {
   it("owner can change a colleague's role inside their own organisation", () => {
     const res = decideUpdateUser(ownerCaller, targetMemberA, { orgRole: "viewer" }, 1);
@@ -196,11 +269,62 @@ describe("decideUpdateUser (slices 13 & 14)", () => {
       role: "customer",
       orgRole: "owner",
       orgId: "org-solberg",
+      jobIds: null,
     });
 
     expect(decideUpdateUser(adminCaller, targetOwnerA, { orgId: "org-solberg" }, 1)).toEqual({
       ok: false,
       reason: "Organisationen måste ha minst en ägare",
+    });
+  });
+});
+
+describe("decideUpdateUser job access (slice 16)", () => {
+  const restrictedMember: TargetUser = {
+    ...targetMemberA,
+    jobIds: ["job-1", "job-2"],
+  };
+
+  it("owner can restrict a member to specific jobs and widen back to all", () => {
+    expect(decideUpdateUser(ownerCaller, restrictedMember, { jobIds: ["job-1"] }, 1)).toEqual({
+      ok: true,
+      fullName: "Lars Ek",
+      email: "lars@nordvik.se",
+      role: "customer",
+      orgRole: "member",
+      orgId: "org-nordvik",
+      jobIds: ["job-1"],
+    });
+    expect(decideUpdateUser(ownerCaller, restrictedMember, { jobIds: null }, 1)).toMatchObject({
+      ok: true,
+      jobIds: null,
+    });
+  });
+
+  it("jobIds survive unrelated updates and are cleared on promotion to owner", () => {
+    expect(decideUpdateUser(ownerCaller, restrictedMember, { orgRole: "viewer" }, 1)).toEqual({
+      ok: true,
+      fullName: "Lars Ek",
+      email: "lars@nordvik.se",
+      role: "customer",
+      orgRole: "viewer",
+      orgId: "org-nordvik",
+      jobIds: ["job-1", "job-2"],
+    });
+    expect(
+      decideUpdateUser(ownerCaller, restrictedMember, { orgRole: "owner", jobIds: ["job-1"] }, 1),
+    ).toMatchObject({ ok: true, orgRole: "owner", jobIds: null });
+  });
+
+  it("admin moving a member to another org resets jobIds", () => {
+    expect(decideUpdateUser(adminCaller, restrictedMember, { orgId: "org-solberg" }, 1)).toEqual({
+      ok: true,
+      fullName: "Lars Ek",
+      email: "lars@nordvik.se",
+      role: "customer",
+      orgRole: "member",
+      orgId: "org-solberg",
+      jobIds: null,
     });
   });
 });

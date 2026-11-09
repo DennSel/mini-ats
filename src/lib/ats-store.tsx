@@ -270,6 +270,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           orgRole: v.input.orgRole,
           ...(v.input.orgId ? { orgId: v.input.orgId } : {}),
           ...(v.newOrgName ? { newOrgName: v.newOrgName } : {}),
+          ...(v.input.jobIds !== undefined ? { jobIds: v.input.jobIds } : {}),
         },
       });
     },
@@ -298,6 +299,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           ...(v.input.role !== undefined ? { role: v.input.role } : {}),
           ...(v.input.orgRole !== undefined ? { orgRole: v.input.orgRole } : {}),
           ...("orgId" in v.input ? { orgId: v.input.orgId ?? null } : {}),
+          ...("jobIds" in v.input ? { jobIds: v.input.jobIds ?? null } : {}),
         },
       });
     },
@@ -344,7 +346,12 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       });
       if (error) throw error;
     },
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["jobs", activeOrgId] }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["jobs", activeOrgId] });
+      if (currentUser?.jobIds) {
+        void refreshUser();
+      }
+    },
     onError: () => toast.error("Kunde inte skapa tjänsten"),
   });
 

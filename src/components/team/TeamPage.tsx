@@ -94,7 +94,6 @@ export function TeamPage() {
 
   const setJobAccess = (id: string, jobIds: string[] | undefined) => {
     updateUser(id, { jobIds });
-    toast.success("Tjänsteåtkomsten uppdaterades");
   };
 
   const inviteForm = (

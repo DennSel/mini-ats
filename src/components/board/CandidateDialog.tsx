@@ -214,7 +214,7 @@ export function CandidateDialog({
               <UserPlus className="h-3.5 w-3.5" /> Kandidat
             </div>
             <h2 className="mb-4 font-display text-xl font-bold">
-              {candidate ? "Redigera kandidat" : "Lägg till kandidat"}
+              {candidate ? "Redigera kandidat" : "Ny kandidat"}
             </h2>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
               <div>
@@ -405,7 +405,7 @@ export function CandidateDialog({
                 <UserPlus className="h-3.5 w-3.5" /> Kandidat
               </div>
               <DialogTitle className="font-display text-xl font-bold">
-                {candidate ? "Redigera kandidat" : "Lägg till kandidat"}
+                {candidate ? "Redigera kandidat" : "Ny kandidat"}
               </DialogTitle>
               <DialogDescription className="text-[12px]">
                 Fält markerade med * är obligatoriska.

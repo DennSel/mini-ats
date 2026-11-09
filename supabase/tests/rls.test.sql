@@ -1,5 +1,5 @@
 begin;
-select plan(10);
+select plan(12);
 
 -- Start from a clean slate inside the rolled-back test transaction even if seed.sql ran
 truncate table candidates, jobs, profiles, orgs cascade;
@@ -20,9 +20,11 @@ insert into profiles (id, role, org_role, org_id, full_name, email) values
   ('dddddddd-0000-0000-0000-00000000000d', 'admin',    'owner',  null,                                   'Admin',    'admin@test.example');
 insert into jobs (id, org_id, title) values
   ('aaaaaaaa-1111-1111-1111-000000000001', '11111111-1111-1111-1111-111111111111', 'Job A'),
+  ('aaaaaaaa-1111-1111-1111-000000000002', '11111111-1111-1111-1111-111111111111', 'Job A2'),
   ('bbbbbbbb-2222-2222-2222-000000000001', '22222222-2222-2222-2222-222222222222', 'Job B');
 insert into candidates (org_id, job_id, name) values
   ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-1111-1111-1111-000000000001', 'Candidate A'),
+  ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-1111-1111-1111-000000000002', 'Candidate A2'),
   ('22222222-2222-2222-2222-222222222222', 'bbbbbbbb-2222-2222-2222-000000000001', 'Candidate B');
 
 -- As Owner A
@@ -30,7 +32,7 @@ do $$ begin perform set_config('request.jwt.claims',
   '{"sub":"aaaaaaaa-0000-0000-0000-00000000000a","role":"authenticated"}', true); end $$;
 set local role authenticated;
 
-select is((select count(*) from candidates)::int, 1, '1: Owner A sees only own org candidates');
+select is((select count(*) from candidates)::int, 2, '1: Owner A sees only own org candidates');
 select is((select count(*) from candidates where org_id = '22222222-2222-2222-2222-222222222222')::int, 0, '2: Owner A sees no candidates from Org B');
 select throws_ok($q$insert into jobs (org_id, title) values ('22222222-2222-2222-2222-222222222222', 'x')$q$,
   '42501', null, '3: Owner A cannot create a job in Org B');
@@ -54,6 +56,21 @@ select throws_ok($q$insert into candidates (org_id, name)
   values ('11111111-1111-1111-1111-111111111111', 'x')$q$, '42501', null, '5: Viewer cannot create a candidate');
 reset role;
 
+-- Restrict Viewer A to Job A only (slice 16: per-member job access)
+update profiles
+  set org_role = 'member',
+      job_ids = array['aaaaaaaa-1111-1111-1111-000000000001'::uuid]
+  where id = 'cccccccc-0000-0000-0000-00000000000c';
+
+do $$ begin perform set_config('request.jwt.claims',
+  '{"sub":"cccccccc-0000-0000-0000-00000000000c","role":"authenticated"}', true); end $$;
+set local role authenticated;
+select is((select count(*) from jobs)::int, 1, '11: Restricted member sees only permitted jobs');
+select throws_ok($q$insert into candidates (org_id, job_id, name)
+  values ('11111111-1111-1111-1111-111111111111', 'aaaaaaaa-1111-1111-1111-000000000002', 'x')$q$,
+  '42501', null, '12: Restricted member cannot add candidate to unpermitted job');
+reset role;
+
 -- As anonymous user
 set local role anon;
 select is((select count(*) from candidates)::int, 0, '8: Anonymous user sees no candidates');
@@ -63,7 +80,7 @@ reset role;
 do $$ begin perform set_config('request.jwt.claims',
   '{"sub":"dddddddd-0000-0000-0000-00000000000d","role":"authenticated"}', true); end $$;
 set local role authenticated;
-select is((select count(*) from candidates)::int, 2, '9: Admin sees candidates from both orgs');
+select is((select count(*) from candidates)::int, 3, '9: Admin sees candidates from both orgs');
 reset role;
 
 select * from finish();
