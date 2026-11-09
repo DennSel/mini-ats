@@ -24,3 +24,5 @@
 
 - Everything in the project is written in English except the UI: code comments, commit messages, docs, issues and pull requests. UI copy, labels, aria-labels and other user-facing strings stay in Swedish (the product language).
 - Before every commit: show the human what will be committed (git status, diff, proposed message). Commit only after approval.
+- Commit messages are plain descriptive English sentences — no conventional-commit type prefixes (feat:, fix:, chore:, docs:) and no step labels. Write "Add Supabase schema migration", not "feat(db): add schema (step 02)".
+- Pull request descriptions describe the code only — what changed and why, in the code. No process narration (who confirmed what, dashboard actions, decisions made outside the code, plans).
