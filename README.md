@@ -10,15 +10,16 @@ organisations and their first owner; after that the owners invite their own coll
 admin can also act on behalf of any customer by selecting the customer's organisation, and
 everything an admin does happens inside that organisation's data.
 
-## Status
+## Architecture & status
 
-The full UI is up and running, but it is backed by an **in-memory store with mock data** —
-nothing is persisted yet. The Supabase backend (schema, row level security, auth and
-persistence) is being wired in; see [Roadmap](#roadmap). Features that are not backed by a
-real backend yet are hidden behind feature flags in the UI, not deleted.
+The application runs on **TanStack Start (React 19 + Nitro SSR)** backed by **Supabase (PostgreSQL, Row Level Security and Supabase Auth)**:
 
-The first commit of the UI-only mock version is kept and tagged, so the demo frontend is
-always runnable: see [Try the mock version](#try-the-mock-version).
+- **Multi-tenant isolation in the database:** Every row in `orgs`, `profiles`, `jobs` and `candidates` is scoped to an organisation (`org_id`) and protected by PostgreSQL Row Level Security (`supabase/migrations/0001_schema.sql`–`0003_harden_rls_functions.sql`), verified by 10 automated pgTAP tests (`supabase/tests/rls.test.sql`).
+- **Authentication & server-side account creation:** Open sign-ups are disabled. Users sign in with email and password via Supabase Auth (`src/lib/auth.ts`). Creating new accounts goes through a TanStack Start server function (`src/lib/users.functions.ts`) that verifies the caller's JWT and profile, validates permissions with the pure `decideCreateUser` rule (`src/lib/create-user-rules.ts`), creates the account using `SUPABASE_SERVICE_ROLE_KEY` on the server, and rolls back if profile creation fails.
+- **Data layer & optimistic kanban:** `src/lib/ats-store.tsx` uses TanStack Query (`useQuery` / `useMutation`) behind the `useAts()` interface. Kanban card order is persisted via a `double precision` `position` column (`src/lib/position.ts`) with midpoint calculation, automatic column renumbering when gaps drop below `0.000001`, and optimistic drag-and-drop updates with rollback on error.
+- **Feature flags:** UI elements that are planned as future extensions (editing/deleting users, changing a colleague's role, per-job access restriction) are hidden behind explicit flags in `src/lib/features.ts`, not deleted.
+
+The initial UI-only mock version is preserved on a git tag so the standalone frontend snapshot remains runnable at any time: see [Try the mock version](#try-the-mock-version).
 
 ## Running the app
 
@@ -26,19 +27,22 @@ Prerequisites: [Bun](https://bun.sh) (use Bun — `npm install` is known to fail
 
 ```sh
 bun install
-cp .env.example .env   # optional today; required once the Supabase backend is wired in
-bun run dev            # dev server with the mock store
+cp .env.example .env   # fill in VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY
+bun run dev
 ```
 
 Other commands:
 
-| Command             | What it does                                                 |
-| ------------------- | ------------------------------------------------------------ |
-| `bun run lint`      | ESLint + Prettier                                            |
-| `bun run typecheck` | `tsc --noEmit`                                               |
-| `bun run test`      | Vitest unit tests (the pure rules in `src/lib/ats-logic.ts`) |
-| `bun run build`     | production build                                             |
-| `bun run preview`   | serve the production build                                   |
+| Command             | What it does                                                               |
+| ------------------- | -------------------------------------------------------------------------- |
+| `bun run lint`      | ESLint + Prettier                                                          |
+| `bun run typecheck` | `tsc --noEmit`                                                             |
+| `bun run test`      | Vitest unit tests (permissions, position math, `decideCreateUser`, drafts) |
+| `bun run test:db`   | pgTAP row level security tests against local Supabase (`supabase test db`) |
+| `bun run build`     | production build                                                           |
+| `bun run preview`   | serve the production build                                                 |
+
+To load the demo organisations (`Nordvik Tech AB` and `Solberg Logistik`), jobs and candidates into Supabase, run `supabase/seed.sql` in the Supabase Dashboard SQL Editor (safe to run multiple times).
 
 ### Try the mock version
 
@@ -56,13 +60,13 @@ tag. All accounts and data in it are invented; never reuse those passwords anywh
 
 ## Environment variables
 
-Copy `.env.example` to `.env` (ignored by git). The app runs without them today; they become
-required as the Supabase integration lands. Only public values ever live in files:
+Copy `.env.example` to `.env` (ignored by git). Only public values ever live in `.env` files on disk:
 
-| Variable                        | Scope  | Purpose                                                              |
-| ------------------------------- | ------ | -------------------------------------------------------------------- |
-| `VITE_SUPABASE_URL`             | client | Supabase project URL (public)                                        |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | client | publishable key (public; access is restricted by row level security) |
+| Variable                    | Scope       | Purpose                                                               |
+| --------------------------- | ----------- | --------------------------------------------------------------------- |
+| `VITE_SUPABASE_URL`         | client      | Supabase project URL (public)                                         |
+| `VITE_SUPABASE_ANON_KEY`    | client      | anonymous / publishable key (public; access is restricted by RLS)     |
+| `SUPABASE_SERVICE_ROLE_KEY` | server-only | used only in `src/lib/users.functions.ts` via platform runtime secret |
 
 The secret key (service role / `sb_secret_…`) bypasses row level security. It exists only in
 Supabase and in Lovable's project settings — never on a local machine, in this repo, in code
@@ -87,14 +91,13 @@ Organization 1─* Candidate *─1 Job   (job_id nullable)
 
 - **Organization** — `id`, `name`. The tenant that owns all its jobs, candidates and users.
 - **User** (`profiles`) — `name`, `email`, platform role (`admin` or `customer`), organisation
-  role, `orgId`. The mock also models per-member job access (`jobIds`: undefined = all jobs;
-  owners and admins always see all); this is being simplified away with the backend.
+  role (`owner`, `member`, `viewer`), `orgId`.
 - **Job** — `title`, `location`, `description`, `status` (`open`/`closed`), `createdAt`.
 - **Candidate** — `name`, `email`, `phone`, LinkedIn URL, additional links (`label` + `url`),
-  free-text note, optional interview time/link, `stage`, `createdAt`. A candidate belongs to
-  one job, or to none (`job_id` null = the organisation's dormant pool, visible to the whole
-  organisation). Within a kanban column the order is kept by a `position` value (double
-  precision) so drag and drop survives persistence.
+  free-text note, optional interview time/link, `stage`, `position`, `createdBy`, `createdAt`.
+  A candidate belongs to one job, or to none (`job_id` null = the organisation's dormant pool,
+  visible to the whole organisation). Within a kanban column the order is kept by a `position`
+  value (`double precision`) so drag and drop survives persistence.
 
 The pipeline has six fixed stages: **Ny, Screening, Intervju, Erbjudande, Anställd, Avslag**
 (new, screening, interview, offer, hired, rejected). Stages are not configurable, and moving
@@ -102,25 +105,28 @@ a candidate to a different job restarts the candidate at "Ny".
 
 ### Roles and permissions
 
-Platform admins can do everything. Customer users follow their organisation role:
+Platform admins (`role = 'admin'`) can do everything across all organisations. Customer users
+(`role = 'customer'`) follow their organisation role (`org_role`):
 
-| Permission                                                    | Owner | Recruiter | Reviewer | Viewer |
-| ------------------------------------------------------------- | :---: | :-------: | :------: | :----: |
-| Move candidates (drag, stage, notes, book interview)          |   ✓   |     ✓     |    ✓     |   —    |
-| Manage candidates (create/edit/delete, links, job assignment) |   ✓   |     ✓     |    —     |   —    |
-| Manage jobs (create/edit, open/close)                         |   ✓   |     ✓     |    —     |   —    |
-| Manage team (invite/remove colleagues, set roles)             |   ✓   |     —     |    —     |   —    |
+| Permission                                                    | Owner | Member | Viewer |
+| ------------------------------------------------------------- | :---: | :----: | :----: |
+| Move candidates (drag, stage, notes, book interview)          |   ✓   |   ✓    |   —    |
+| Manage candidates (create/edit/delete, links, job assignment) |   ✓   |   ✓    |   —    |
+| Manage jobs (create/edit, open/close)                         |   ✓   |   ✓    |   —    |
+| Invite colleagues (`createUser` server function)              |   ✓   |   —    |   —    |
 
-An organisation always keeps at least one owner. As the backend lands this model is narrowed
-to three organisation roles — owner, member and reader — while recruiter/reviewer/job access
-move to the extension list. Permission checks live in one place (`can()` in
-`src/lib/ats-logic.ts`); the same rules are enforced again by row level security on the
-server, since hiding something in the UI is never a permission.
+Permission checks live in one place on the client (`can()` in `src/lib/ats-logic.ts`) and are
+enforced independently in PostgreSQL Row Level Security (`supabase/migrations/0002_rls.sql`)
+and in `decideCreateUser` (`src/lib/create-user-rules.ts`), since hiding something in the UI is
+never a permission.
 
 ## Assumptions
 
 - The customer is an organisation with multiple users; the organisation owns its data and
   adds its own members. No open registration — only admins and owners create accounts.
+- Account creation (`createUser`) sets a temporary password with `email_confirm: true` via the
+  Supabase Admin API instead of sending confirmation emails, so demo and review accounts can
+  sign in immediately without an SMTP setup or real inbox.
 - Scale is tens of jobs and hundreds of candidates per organisation, so filtering (by job
   and candidate name, in the board's `job` and `q` URL parameters) happens client-side and
   there is no pagination yet.
@@ -128,21 +134,28 @@ server, since hiding something in the UI is never a permission.
   a link.
 - The pipeline is fixed at six stages, the same for every organisation.
 - Swedish UI, desktop-first, usable on mobile.
-- Unfinished features are hidden behind feature flags and listed in the roadmap, never
-  silently deleted.
+- Unfinished features are hidden behind feature flags (`src/lib/features.ts`) and listed in
+  the roadmap, never silently deleted.
 
-## Roadmap
+## How it was built
 
-1. Supabase schema (`orgs`, `profiles`, `jobs`, `candidates`) with row level security:
-   an organisation's data is only visible and writable inside that organisation.
-2. Real authentication (Supabase Auth, email + password); roles come from the profile;
-   the mock logins and demo buttons are removed from the working tree.
-3. Server-side account creation with the service role: admins create organisations and
-   first owners; owners invite colleagues — always forced to the customer role and their own
-   organisation, decided on the server, never by the UI.
-4. Replace the in-memory store with Supabase queries behind the same `useAts()` interface.
-5. Optional extension: AI-assisted CV screening — a server function that takes CV text plus
-   the job description and returns validated JSON, rather than importing anything.
+### Toolchain
+
+- **Google Stitch:** Early visual exploration to set the layout feel, typography and dense kanban proportions.
+- **Lovable:** Built the interactive React + TanStack Start UI skeleton against an in-memory store (`mock-ui-v0`) and iterated on mobile navigation and candidate drafts.
+- **Chat AI:** Used to challenge scope, narrow the role model to what could be enforced end-to-end in RLS, and structure the step-by-step backend plan before writing migration code.
+- **Coding agents (Claude Code & Antigravity):** Implemented the PostgreSQL schema, RLS policies and triggers, pgTAP database tests, Vitest unit tests, TanStack Query data layer, and the `createUser` server function, with human diff review before every commit and manual SQL execution in the Supabase Dashboard (no `supabase login` token or service-role key ever stored on disk).
+
+### Three lessons learned
+
+1. **Explicit table grants vs. RLS policies when `auto_expose` is disabled:** Disabling automatic Data API exposure in Supabase meant RLS policies alone were not enough — explicit `GRANT` statements were required, and an initial AI draft only granted `SELECT` on `orgs` to `authenticated`, which would have blocked platform admins from creating organisations. Running Supabase Security Advisor also caught that `SECURITY DEFINER` helper and trigger functions needed explicit `REVOKE EXECUTE FROM public, anon` (`0003_harden_rls_functions.sql`).
+2. **Mutating the database tests to prove they can fail:** In the pgTAP test suite (`supabase/tests/rls.test.sql`), an initial privilege-escalation test (`update profiles set role = 'admin'`) looked green only because RLS blocked the row; when we temporarily opened a permissive `UPDATE` policy to verify the test would fail, PostgreSQL rejected the query on the table's `CHECK ((role = 'admin') = (org_id is null))` constraint instead of testing role escalation. Updating the test to also set `org_id = null` made the mutation check fail as intended before restoring the strict policy.
+3. **SSR/client bundler boundaries and browser Web Locks:** Two subtle runtime issues surfaced when wiring real auth: `@tanstack/start-plugin-core` excluded `@tanstack/react-router` from Vite's dependency optimizer, leaving its transitive CommonJS dependency `use-sync-external-store/shim/with-selector` unbundled on cold loads of `/`, and awaiting `loadUser()` directly inside Supabase's `onAuthStateChange` risked deadlocking `navigator.locks`. Inspecting the page via headless Edge CDP pinpointed the CJS `SyntaxError` immediately (`vite.optimizeDeps.include`), and deferring `loadUser()` with `setTimeout(..., 0)` plus an 8-second timeout kept auth initialization resilient.
+
+## Future extensions
+
+1. **AI-assisted CV screening:** A server function that takes pasted CV text plus the job description and returns validated structured JSON (summary, strengths, gaps, suggested interview questions).
+2. **Account lifecycle & granular roles:** Editing/removing team members (`FEATURES.editUser`, `FEATURES.deleteUser`, `FEATURES.changeMemberRole`, `FEATURES.removeMember`) and per-job access restrictions (`FEATURES.jobAccessRestriction`) backed by a `job_members` table.
 
 ## Before going live (GDPR)
 
@@ -158,8 +171,10 @@ Not done yet — required before onboarding a first customer:
   including deleting a whole organisation's data.
 - **Minimisation:** the free-text note field must not become storage for special-category
   data; instruct users accordingly.
-- **Access control:** verify that open sign-up is disabled in Supabase Auth and that row
-  level security keeps organisations isolated (verified by tests, not by the UI).
+- **Access control & onboarding:** verify that open sign-up is disabled in Supabase Auth, that
+  row level security keeps organisations isolated (verified by tests, not by the UI), and
+  replace the demo temporary-password creation (`email_confirm: true`) with an email
+  invitation flow (`auth.admin.inviteUserByEmail`) or forced password change on first login.
 
 ## Tech stack
 
