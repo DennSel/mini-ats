@@ -90,7 +90,7 @@ export function JobsPage() {
       <div>
         <div className="glass flex flex-col gap-3 rounded-2xl p-2 pl-4 sm:flex-row sm:items-center">
           <ViewLabel className="sm:pr-1">Tjänster</ViewLabel>
-          <div className="flex gap-1 overflow-x-auto no-scrollbar">
+          <div className="flex min-w-0 gap-1 overflow-x-auto no-scrollbar">
             {(
               [
                 ["all", "Alla"],
@@ -113,14 +113,13 @@ export function JobsPage() {
               </button>
             ))}
           </div>
-          <SearchInput
-            value={q}
-            onChange={setQ}
-            placeholder="Sök tjänst…"
-            className="sm:ml-auto sm:w-72 sm:flex-none sm:max-w-none"
-          />
+          <SearchInput value={q} onChange={setQ} placeholder="Sök tjänst…" />
           {canJobs && (
-            <Button variant="gradient" onClick={() => setDialog({ open: true, job: null })}>
+            <Button
+              variant="gradient"
+              className="sm:ml-auto"
+              onClick={() => setDialog({ open: true, job: null })}
+            >
               <Plus className="icon-rotate" /> Ny tjänst
             </Button>
           )}

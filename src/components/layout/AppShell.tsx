@@ -125,7 +125,7 @@ function ProfileMenu() {
           ) : (
             <Avatar name={currentUser.name} size="sm" />
           )}
-          <span className="hidden max-w-32 truncate font-display text-[13px] font-semibold sm:block">
+          <span className="hidden max-w-20 truncate font-display text-[13px] font-semibold sm:block lg:max-w-32">
             {currentUser.name}
           </span>
           <ChevronsUpDown className="hidden h-4 w-4 shrink-0 text-faint sm:block" />
@@ -188,10 +188,10 @@ function CustomerBanner() {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
         </span>
-        <span className="hidden truncate text-muted-foreground lg:inline">Du agerar som </span>
+        <span className="hidden truncate text-muted-foreground xl:inline">Du agerar som </span>
         <Select value={selectedOrgId ?? ""} onValueChange={selectOrg}>
           <SelectTrigger
-            className="h-6 w-auto shrink-0 gap-2 rounded-full border-0 bg-transparent px-1 text-[12px] shadow-none focus:ring-0"
+            className="h-6 w-auto min-w-0 max-w-56 gap-2 rounded-full border-0 bg-transparent px-1 text-[12px] shadow-none focus:ring-0"
             aria-label="Byt kund"
           >
             <SelectValue placeholder="Byt kund" />
@@ -221,11 +221,11 @@ export function AppShell({ children }: { children: ReactNode }) {
           isAdmin && "admin-bar",
         )}
       >
-        <div className="flex min-w-0 items-center gap-2 sm:gap-4">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-4">
           <Logo className="shrink-0" />
           <Nav />
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           <CustomerBanner />
           <ProfileMenu />
         </div>
