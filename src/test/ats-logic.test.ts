@@ -10,10 +10,82 @@ import {
   interviewUrgency,
   moveCandidate,
 } from "@/lib/ats-logic";
-import { seedCandidates, seedUsers, type User } from "@/lib/mock-data";
+import type { Candidate, User } from "@/lib/types";
 
-const admin = seedUsers.find((u) => u.role === "admin")!;
-const customer = seedUsers.find((u) => u.id === "u-anna")!;
+const testUsers: User[] = [
+  {
+    id: "u-admin",
+    name: "Maja Lindqvist",
+    email: "admin@kandsys.se",
+    role: "admin",
+    orgRole: "owner",
+    orgId: null,
+  },
+  {
+    id: "u-anna",
+    name: "Anna Berg",
+    email: "anna@nordvik.se",
+    role: "customer",
+    orgRole: "owner",
+    orgId: "org-nordvik",
+  },
+  {
+    id: "u-lars",
+    name: "Lars Holm",
+    email: "lars@nordvik.se",
+    role: "customer",
+    orgRole: "member",
+    orgId: "org-nordvik",
+  },
+];
+
+const testCandidates: Candidate[] = [
+  {
+    id: "cand-1",
+    orgId: "org-nordvik",
+    jobId: "job-n1",
+    name: "Erik Sjöberg",
+    email: "erik@example.com",
+    phone: "070-111 22 33",
+    linkedin: "https://www.linkedin.com/in/erik-sjoberg",
+    links: [],
+    note: "",
+    stage: "interview",
+    position: 1000,
+    createdAt: "2026-10-12",
+  },
+  {
+    id: "cand-2",
+    orgId: "org-nordvik",
+    jobId: null,
+    name: "Klara Nyström",
+    email: "klara@example.com",
+    phone: "070-222 33 44",
+    linkedin: "",
+    links: [],
+    note: "",
+    stage: "new",
+    position: 2000,
+    createdAt: "2026-10-14",
+  },
+  {
+    id: "cand-3",
+    orgId: "org-solberg",
+    jobId: "job-s1",
+    name: "Oskar Lind",
+    email: "oskar@example.com",
+    phone: "",
+    linkedin: "",
+    links: [],
+    note: "",
+    stage: "new",
+    position: 1000,
+    createdAt: "2026-10-15",
+  },
+];
+
+const admin = testUsers[0]!;
+const customer = testUsers[1]!;
 
 describe("ats rules", () => {
   it("only admins can access /admin", () => {
@@ -32,21 +104,22 @@ describe("ats rules", () => {
   });
 
   it("filters candidates by org", () => {
-    const res = filterCandidates(seedCandidates, { orgId: "org-nordvik" });
-    expect(res).toHaveLength(14);
+    const res = filterCandidates(testCandidates, { orgId: "org-nordvik" });
+    expect(res).toHaveLength(2);
     expect(res.every((c) => c.orgId === "org-nordvik")).toBe(true);
   });
 
   it("moves a candidate to a new stage", () => {
-    const id = seedCandidates[0]!.id;
-    const res = moveCandidate(seedCandidates, id, "hired");
+    const id = testCandidates[0]!.id;
+    const res = moveCandidate(testCandidates, id, "hired");
     expect(res.find((c) => c.id === id)?.stage).toBe("hired");
-    expect(res).toHaveLength(seedCandidates.length);
+    expect(res).toHaveLength(testCandidates.length);
   });
 
   it("pipeline hides dormant candidates", () => {
-    const res = filterCandidates(seedCandidates, { orgId: "org-nordvik", assignedOnly: true });
-    expect(res).toHaveLength(12);
+    const res = filterCandidates(testCandidates, { orgId: "org-nordvik", assignedOnly: true });
+    expect(res).toHaveLength(1);
+    expect(res[0]?.id).toBe("cand-1");
   });
 
   it("role permissions", () => {
@@ -62,19 +135,17 @@ describe("ats rules", () => {
   });
 
   it("last owner of an org is protected", () => {
-    expect(isLastOwner(seedUsers, "u-anna")).toBe(true);
-    expect(isLastOwner(seedUsers, "u-lars")).toBe(false);
+    expect(isLastOwner(testUsers, "u-anna")).toBe(true);
+    expect(isLastOwner(testUsers, "u-lars")).toBe(false);
   });
 
   it("sending to another job or dormant restarts at Ny", () => {
-    const c = seedCandidates.find(
-      (x) => x.stage === "interview" && x.jobId !== "job-n2" && x.orgId === "org-nordvik",
-    )!;
+    const c = testCandidates[0]!;
     expect(
-      assignCandidate(seedCandidates, c.id, "job-n2").find((x) => x.id === c.id),
+      assignCandidate(testCandidates, c.id, "job-n2").find((x) => x.id === c.id),
     ).toMatchObject({ jobId: "job-n2", stage: "new" });
     expect(
-      assignCandidate(seedCandidates, c.id, null).find((x) => x.id === c.id)?.jobId,
+      assignCandidate(testCandidates, c.id, null).find((x) => x.id === c.id)?.jobId,
     ).toBeNull();
   });
 });
