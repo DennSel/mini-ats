@@ -4,7 +4,7 @@ export type OrgRole = "owner" | "member" | "viewer";
 
 export const ORG_ROLES = [
   { id: "owner", label: "Ägare", description: "Hanterar teamet och allt annat" },
-  { id: "member", label: "Medlem", description: "Jobb, kandidater och flytt" },
+  { id: "member", label: "Medlem", description: "Tjänster, kandidater och flytt" },
   { id: "viewer", label: "Läsare", description: "Kan bara läsa" },
 ] as const;
 
