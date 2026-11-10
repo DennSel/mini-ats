@@ -62,7 +62,7 @@ export const INITIAL_DEMO_JOBS: Job[] = [
     location: "Stockholm",
     description: "Bygg vårt nya kundgränssnitt i React och TypeScript.",
     status: "open",
-    createdAt: "2026-09-14T09:00:00Z",
+    createdAt: "2026-09-14",
   },
   {
     id: "job-demo-2",
@@ -71,7 +71,7 @@ export const INITIAL_DEMO_JOBS: Job[] = [
     location: "Göteborg (hybrid)",
     description: "Forma användarupplevelsen i våra produkter.",
     status: "open",
-    createdAt: "2026-09-28T09:00:00Z",
+    createdAt: "2026-09-28",
   },
   {
     id: "job-demo-3",
@@ -80,7 +80,7 @@ export const INITIAL_DEMO_JOBS: Job[] = [
     location: "Distans",
     description: "Ansvara för vår molninfrastruktur och CI/CD.",
     status: "closed",
-    createdAt: "2026-07-02T09:00:00Z",
+    createdAt: "2026-07-02",
   },
   {
     id: "job-demo-4",
@@ -89,7 +89,7 @@ export const INITIAL_DEMO_JOBS: Job[] = [
     location: "Jönköping",
     description: "Led ett team på 25 personer i vårt centrallager.",
     status: "open",
-    createdAt: "2026-10-01T09:00:00Z",
+    createdAt: "2026-10-01",
   },
   {
     id: "job-demo-5",
@@ -98,7 +98,7 @@ export const INITIAL_DEMO_JOBS: Job[] = [
     location: "Malmö",
     description: "Planera och optimera våra leveransrutter.",
     status: "open",
-    createdAt: "2026-10-12T09:00:00Z",
+    createdAt: "2026-10-12",
   },
 ];
 
@@ -117,7 +117,7 @@ export const INITIAL_DEMO_CANDIDATES: Candidate[] = [
     stage: "new",
     position: 1000,
     createdBy: "u-demo-owner",
-    createdAt: "2026-10-01T10:00:00Z",
+    createdAt: "2026-10-01",
   },
   {
     id: "c-demo-2",
@@ -133,7 +133,7 @@ export const INITIAL_DEMO_CANDIDATES: Candidate[] = [
     stage: "new",
     position: 1000,
     createdBy: "u-demo-owner",
-    createdAt: "2026-10-04T10:00:00Z",
+    createdAt: "2026-10-04",
   },
   {
     id: "c-demo-3",
@@ -149,7 +149,7 @@ export const INITIAL_DEMO_CANDIDATES: Candidate[] = [
     stage: "screening",
     position: 1000,
     createdBy: "u-demo-owner",
-    createdAt: "2026-10-07T10:00:00Z",
+    createdAt: "2026-10-07",
   },
   {
     id: "c-demo-4",
@@ -165,7 +165,7 @@ export const INITIAL_DEMO_CANDIDATES: Candidate[] = [
     stage: "screening",
     position: 2000,
     createdBy: "u-demo-owner",
-    createdAt: "2026-10-10T10:00:00Z",
+    createdAt: "2026-10-10",
   },
   {
     id: "c-demo-5",
@@ -177,13 +177,13 @@ export const INITIAL_DEMO_CANDIDATES: Candidate[] = [
     linkedin: "https://www.linkedin.com/in/maja-persson",
     links: [],
     note: "Case-presentation bokad.",
-    interviewAt: "2026-11-18T13:30:00Z",
+    interviewAt: "2026-11-18T13:30",
     interviewLink: "https://meet.google.com/abc-defg-hij",
     resumePath: null,
     stage: "interview",
     position: 1000,
     createdBy: "u-demo-owner",
-    createdAt: "2026-10-13T10:00:00Z",
+    createdAt: "2026-10-13",
   },
   {
     id: "c-demo-6",
@@ -195,13 +195,13 @@ export const INITIAL_DEMO_CANDIDATES: Candidate[] = [
     linkedin: "https://www.linkedin.com/in/oskar-lund",
     links: [],
     note: "Första tekniska intervjun genomförd med teamet.",
-    interviewAt: "2026-11-20T10:00:00Z",
+    interviewAt: "2026-11-20T10:00",
     interviewLink: "https://meet.google.com/xyz-uvwx-rst",
     resumePath: null,
     stage: "interview",
     position: 1000,
     createdBy: "u-demo-owner",
-    createdAt: "2026-10-16T10:00:00Z",
+    createdAt: "2026-10-16",
   },
   {
     id: "c-demo-7",
@@ -217,7 +217,7 @@ export const INITIAL_DEMO_CANDIDATES: Candidate[] = [
     stage: "offer",
     position: 1000,
     createdBy: "u-demo-owner",
-    createdAt: "2026-10-19T10:00:00Z",
+    createdAt: "2026-10-19",
   },
 ];
 

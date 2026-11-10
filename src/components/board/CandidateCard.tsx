@@ -76,7 +76,8 @@ export function CandidateCardView({
               interviewUrgencyStyles[interviewUrgency(candidate.interviewAt)],
             )}
           >
-            <CalendarClock className="h-3 w-3" /> {candidate.interviewAt.replace("T", " ")}
+            <CalendarClock className="h-3 w-3" />{" "}
+            {candidate.interviewAt.slice(0, 16).replace("T", " ")}
           </span>
         ) : (
           <span className="text-[10px] text-faint">Ingen intervju bokad</span>
