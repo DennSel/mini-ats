@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Building2, Check, Pencil, Plus, Trash2, UserPlus } from "lucide-react";
+import { Building2, Check, Pencil, Plus, Sparkles, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useAts } from "@/lib/ats-store";
 import { isLastOwner } from "@/lib/ats-logic";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -80,10 +81,19 @@ const emptyUser: UserValues = {
 };
 
 export function AdminPage() {
-  const { users, organizations, currentUser, createUser, updateUser, deleteUser, deleteOrg } =
-    useAts();
+  const {
+    users,
+    organizations,
+    currentUser,
+    createUser,
+    updateUser,
+    deleteUser,
+    deleteOrg,
+    demoLoginEnabled,
+    setDemoLoginEnabled,
+  } = useAts();
   const desktop = useIsDesktop(640);
-  const [tab, setTab] = usePersistentState<"users" | "orgs">("admin.tab", "users");
+  const [tab, setTab] = usePersistentState<"users" | "orgs" | "other">("admin.tab", "users");
   const [panels, setPanels] = usePersistentState<{ user: boolean | null; org: boolean | null }>(
     "admin.panels",
     {
@@ -94,7 +104,7 @@ export function AdminPage() {
   const userOpen = panels.user ?? desktop;
   const orgOpen = panels.org ?? desktop;
   const panel: "user" | "org" | null =
-    tab === "users" ? (userOpen ? "user" : null) : orgOpen ? "org" : null;
+    tab === "users" ? (userOpen ? "user" : null) : tab === "orgs" && orgOpen ? "org" : null;
   const setPanel = (p: "user" | "org" | null) =>
     setPanels((s) =>
       p ? { ...s, [p]: true } : { ...s, [tab === "users" ? "user" : "org"]: false },
@@ -150,18 +160,24 @@ export function AdminPage() {
   return (
     <div className="space-y-4">
       <div className="glass flex flex-col gap-2 rounded-2xl p-2.5 pl-4">
-        <ViewLabel title="Admin" />
+        <div className="flex flex-wrap items-center justify-between gap-2 pr-1.5">
+          <ViewLabel title="Admin" />
+        </div>
         {/* Tabs: stacked vertically on smaller screens (flex-col), horizontal on xl (xl:flex-row) */}
         <div className="flex shrink-0 gap-1">
           {(
             [
               ["users", "Användare", users.length],
               ["orgs", "Organisationer", organizations.length],
+              ["other", "Övrigt", null],
             ] as const
           ).map(([k, label, n]) => (
             <button
               key={k}
-              onClick={() => setTab(k)}
+              onClick={() => {
+                setTab(k);
+                setPanel(null);
+              }}
               className={cn(
                 "flex items-center justify-between sm:justify-start gap-2 rounded-xl border px-3 py-1.5 font-display text-[12px] font-semibold transition",
                 tab === k
@@ -170,79 +186,81 @@ export function AdminPage() {
               )}
             >
               <span>{label}</span>
-              <span className="font-mono text-[11px] text-faint">{n}</span>
+              {n !== null && <span className="font-mono text-[11px] text-faint">{n}</span>}
             </button>
           ))}
         </div>
 
         {/* Right section: 2x2 grid on smaller screens, flex row on xl */}
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            {/* 1. Roll-filter */}
-            {tab === "users" && (
-              <Select value={roleFilter} onValueChange={setRoleFilter}>
-                <SelectTrigger
-                  className="h-9 w-36 shrink-0 rounded-xl border-border bg-surface-low"
-                  aria-label="Filtrera på roll"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Alla roller</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                  {ORG_ROLES.map((r) => (
-                    <SelectItem key={r.id} value={r.id}>
-                      {r.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
+        {tab !== "other" && (
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              {/* 1. Roll-filter */}
+              {tab === "users" && (
+                <Select value={roleFilter} onValueChange={setRoleFilter}>
+                  <SelectTrigger
+                    className="h-9 w-36 shrink-0 rounded-xl border-border bg-surface-low"
+                    aria-label="Filtrera på roll"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL}>Alla roller</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    {ORG_ROLES.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
 
-            {/* 2. Organisations-filter */}
-            {tab === "users" ? (
-              <Select value={orgFilter} onValueChange={setOrgFilter}>
-                <SelectTrigger
-                  className="h-9 w-44 shrink-0 rounded-xl border-border bg-surface-low"
-                  aria-label="Filtrera på organisation"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL}>Alla organisationer</SelectItem>
-                  {organizations.map((o) => (
-                    <SelectItem key={o.id} value={o.id}>
-                      {o.name}
-                    </SelectItem>
-                  ))}
-                  <SelectItem value={NONE}>Utan organisation</SelectItem>
-                </SelectContent>
-              </Select>
-            ) : null}
+              {/* 2. Organisations-filter */}
+              {tab === "users" ? (
+                <Select value={orgFilter} onValueChange={setOrgFilter}>
+                  <SelectTrigger
+                    className="h-9 w-44 shrink-0 rounded-xl border-border bg-surface-low"
+                    aria-label="Filtrera på organisation"
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL}>Alla organisationer</SelectItem>
+                    {organizations.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.name}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value={NONE}>Utan organisation</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : null}
 
-            {/* 3. Search field */}
-            <SearchInput
-              value={q}
-              onChange={setQ}
-              placeholder="Sök…"
-              className="min-w-9 basis-24 md:max-w-none"
-            />
+              {/* 3. Search field */}
+              <SearchInput
+                value={q}
+                onChange={setQ}
+                placeholder="Sök…"
+                className="min-w-9 basis-24 md:max-w-none"
+              />
 
-            {/* 4. Create user button */}
-            <Button
-              variant="gradient"
-              className="shrink-0"
-              onClick={() => setPanel(tab === "users" ? "user" : "org")}
-            >
-              {tab === "users" ? <UserPlus /> : <BuildingComplexPlus />}
-              {tab === "users" ? "Skapa användare" : "Ny organisation"}
-            </Button>
+              {/* 4. Create user button */}
+              <Button
+                variant="gradient"
+                className="shrink-0"
+                onClick={() => setPanel(tab === "users" ? "user" : "org")}
+              >
+                {tab === "users" ? <UserPlus /> : <BuildingComplexPlus />}
+                {tab === "users" ? "Skapa användare" : "Ny organisation"}
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
       <WithSidePanel
         side={
-          panel === "user" ? (
+          tab === "other" ? null : panel === "user" ? (
             <form onSubmit={form.handleSubmit(onCreate)} className="space-y-4" noValidate>
               <UserFields form={form} allowNewOrg />
               <div className="flex justify-end gap-2">
@@ -353,7 +371,7 @@ export function AdminPage() {
                     </p>
                   )}
                 </div>
-              ) : (
+              ) : tab === "orgs" ? (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {visibleOrgs.map((o) => (
                     <div
@@ -413,6 +431,44 @@ export function AdminPage() {
                   {visibleOrgs.length === 0 && (
                     <p className="text-muted-foreground">Inga organisationer hittades.</p>
                   )}
+                </div>
+              ) : (
+                <div className="mt-4 space-y-4">
+                  <div className="glass-card rounded-2xl p-5 sm:p-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 text-accent-3" />
+                          <h3 className="font-display text-[14px] font-semibold">
+                            Demoläge på inloggningssidan
+                          </h3>
+                        </div>
+                        <p className="max-w-xl text-[12px] leading-relaxed text-muted-foreground sm:text-[13px]">
+                          Styr om snabbknapparna för demoläge (&rdquo;Demo: Rekryterare&rdquo; och
+                          &rdquo;Demo: Admin&rdquo;) ska visas på inloggningssidan. När läget är
+                          aktivt kan besökare prova appen direkt i en temporär in-memory-miljö utan
+                          att påverka databasen.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3 self-start sm:self-center">
+                        <span className="text-[12px] font-medium text-muted-foreground">
+                          {demoLoginEnabled ? "Aktivt" : "Inaktivt"}
+                        </span>
+                        <Switch
+                          checked={demoLoginEnabled}
+                          onCheckedChange={(checked) => {
+                            setDemoLoginEnabled(checked);
+                            toast.success(
+                              checked
+                                ? "Demoknappar visas nu på inloggningssidan"
+                                : "Demoknappar är nu dolda på inloggningssidan",
+                            );
+                          }}
+                          aria-label="Visa demoläge på inloggningssidan"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

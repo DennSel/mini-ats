@@ -24,6 +24,7 @@ import { Avatar, NoActiveOrgState, SearchInput, ViewLabel, stageStyles } from "@
 import { cn } from "@/lib/utils";
 import { POOL, WithCandidatePanel, useIsDesktop } from "@/components/board/CandidatePanel";
 import { CandidateDialog } from "@/components/board/CandidateDialog";
+import { formatDate } from "@/lib/ats-logic";
 
 const ALL = "__all";
 
@@ -257,7 +258,9 @@ export function CandidatesPage() {
                     {stageBadge(c)}
                   </div>
                 </td>
-                <td className="px-4 py-3 font-mono text-[10px] text-faint">{c.createdAt}</td>
+                <td className="px-4 py-3 font-mono text-[10px] text-faint">
+                  {formatDate(c.createdAt)}
+                </td>
                 {canMove && <td className="px-4 py-3 text-right">{sendMenu(c)}</td>}
               </tr>
             ))}
@@ -296,7 +299,7 @@ export function CandidatesPage() {
                 {c.jobId ? jobTitle(c.jobId) : "Vilande"}
               </span>
               <span className="ml-auto shrink-0 font-mono text-[10px] text-faint">
-                {c.createdAt}
+                {formatDate(c.createdAt)}
               </span>
             </div>
             {canMove && <div className="mt-2">{sendMenu(c)}</div>}

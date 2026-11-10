@@ -10,6 +10,7 @@ import {
   interviewUrgency,
   interviewRelativeDays,
   formatInterviewTime,
+  formatDate,
   moveCandidate,
 } from "@/lib/ats-logic";
 import type { Candidate, User } from "@/lib/types";
@@ -180,5 +181,17 @@ describe("formatInterviewTime and interviewRelativeDays", () => {
     expect(interviewRelativeDays("2026-11-18T11:53", now)).toBe("8 dagar");
     expect(interviewRelativeDays("2026-11-11T09:00", now)).toBe("1 dag");
     expect(interviewRelativeDays("2026-11-10T15:00", now)).toBe("idag");
+  });
+});
+
+describe("formatDate", () => {
+  it("formats ISO timestamps to YYYY-MM-DD", () => {
+    expect(formatDate("2026-10-19T10:00:00Z")).toBe("2026-10-19");
+    expect(formatDate("2026-11-08T14:30:15.123+01:00")).toBe("2026-11-08");
+  });
+  it("returns empty string for null, undefined or empty string", () => {
+    expect(formatDate(null)).toBe("");
+    expect(formatDate(undefined)).toBe("");
+    expect(formatDate("")).toBe("");
   });
 });

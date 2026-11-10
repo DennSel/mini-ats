@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, LogIn } from "lucide-react";
+import { Eye, EyeOff, LogIn, ShieldCheck, UserCheck } from "lucide-react";
 import { signIn } from "@/lib/auth";
 import { useAts } from "@/lib/ats-store";
 import { homePathFor } from "@/lib/ats-logic";
@@ -17,10 +17,21 @@ const schema = z.object({
 type Values = z.infer<typeof schema>;
 
 export function LoginPage() {
-  const { refreshUser } = useAts();
+  const { refreshUser, startDemoSession, demoLoginEnabled, setDemoLoginEnabled } = useAts();
   const navigate = useNavigate();
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const demoParam = params.get("demo");
+    if (demoParam === "1" || demoParam === "true") {
+      setDemoLoginEnabled(true);
+    } else if (demoParam === "0" || demoParam === "false") {
+      setDemoLoginEnabled(false);
+    }
+  }, [setDemoLoginEnabled]);
   const {
     register,
     handleSubmit,
@@ -106,6 +117,46 @@ export function LoginPage() {
             <LogIn /> Logga in
           </Button>
         </form>
+
+        {demoLoginEnabled && (
+          <>
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
+                <span className="bg-surface px-2 text-faint font-medium">Eller prova direkt</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 w-full justify-center gap-2 text-[13px]"
+                onClick={() => {
+                  startDemoSession("owner");
+                  navigate({ to: "/board" });
+                }}
+              >
+                <UserCheck className="h-4 w-4 text-accent-3 shrink-0" />
+                <span>Demo: Rekryterare</span>
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 w-full justify-center gap-2 text-[13px]"
+                onClick={() => {
+                  startDemoSession("admin");
+                  navigate({ to: "/admin" });
+                }}
+              >
+                <ShieldCheck className="h-4 w-4 text-accent-3 shrink-0" />
+                <span>Demo: Admin</span>
+              </Button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
