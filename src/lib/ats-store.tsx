@@ -77,9 +77,13 @@ interface AtsState {
   createCandidate: (input: CandidateInput) => void;
   updateCandidate: (
     id: string,
-    input: Partial<Omit<Candidate, "id">> & { resumeFile?: File | undefined },
+    input: Partial<Omit<Candidate, "id">> & {
+      resumeFile?: File | undefined;
+      resumePath?: string | null | undefined;
+    },
   ) => void;
   deleteCandidate: (id: string) => void;
+  deleteResume: (candidateId: string) => void;
   moveCandidate: (id: string, stage: Stage, beforeId?: string | null) => void;
   assignCandidate: (id: string, jobId: string | null) => void;
   addLink: (id: string, label: string, url: string) => void;
@@ -437,7 +441,10 @@ export function AtsProvider({ children }: { children: ReactNode }) {
   const updateCandidateMut = useMutation({
     mutationFn: async (v: {
       id: string;
-      input: Partial<Omit<Candidate, "id">> & { resumeFile?: File | undefined };
+      input: Partial<Omit<Candidate, "id">> & {
+        resumeFile?: File | undefined;
+        resumePath?: string | null | undefined;
+      };
     }) => {
       const patch: Partial<CandidateRow> = {};
 
@@ -450,6 +457,12 @@ export function AtsProvider({ children }: { children: ReactNode }) {
           .upload(path, v.input.resumeFile, { contentType: "application/pdf", upsert: true });
         if (uploadErr) throw uploadErr;
         patch.resume_path = path;
+      } else if (v.input.resumePath === null) {
+        const existingPath = candidates.find((c) => c.id === v.id)?.resumePath;
+        if (existingPath) {
+          await supabase.storage.from("resumes").remove([existingPath]);
+        }
+        patch.resume_path = null;
       }
 
       if (v.input.name !== undefined) patch.name = v.input.name;
@@ -488,6 +501,24 @@ export function AtsProvider({ children }: { children: ReactNode }) {
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["candidates", activeOrgId] }),
     onError: () => toast.error("Kunde inte radera kandidaten"),
+  });
+
+  const deleteResumeMut = useMutation({
+    mutationFn: async (id: string) => {
+      const candidate = candidates.find((c) => c.id === id);
+      if (!candidate?.resumePath) return;
+      await supabase.storage.from("resumes").remove([candidate.resumePath]);
+      const { error } = await supabase
+        .from("candidates")
+        .update({ resume_path: null })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("CV:t togs bort");
+      void qc.invalidateQueries({ queryKey: ["candidates", activeOrgId] });
+    },
+    onError: () => toast.error("Kunde inte ta bort CV:t"),
   });
 
   const moveCandidateMut = useMutation({
@@ -577,6 +608,9 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       deleteCandidate: (id) => {
         deleteCandidateMut.mutate(id);
       },
+      deleteResume: (id) => {
+        deleteResumeMut.mutate(id);
+      },
       moveCandidate: (id, stage, beforeId) => {
         const planned = planMoveCandidate(candidates, id, stage, beforeId);
         if (!planned) return;
@@ -653,6 +687,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       createCandidateMut,
       updateCandidateMut,
       deleteCandidateMut,
+      deleteResumeMut,
       moveCandidateMut,
       createOrgMut,
       updateOrgMut,
