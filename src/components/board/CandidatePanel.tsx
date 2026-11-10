@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   CalendarClock,
   Video,
@@ -9,9 +9,7 @@ import {
   Mail,
   Pencil,
   Phone,
-  Plus,
   Trash2,
-  Check,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,30 +24,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { FEATURES } from "@/lib/features";
 import { supabase } from "@/lib/supabase";
-import {
-  Avatar,
-  FieldError,
-  inputClass,
-  labelClass,
-  normalizeUrl,
-  stageStyles,
-} from "@/components/shared";
+import { Avatar, interviewUrgencyStyles, labelClass, stageStyles } from "@/components/shared";
 import { cn } from "@/lib/utils";
 import { useAts } from "@/lib/ats-store";
-import { STAGES, type Stage } from "@/lib/mock-data";
-
-import { UnsavedCandidateDialog } from "./UnsavedCandidateDialog";
-import { hasCandidateDraftChanges } from "@/lib/candidate-draft";
+import { STAGES } from "@/lib/mock-data";
+import { interviewRelativeDays, interviewUrgency } from "@/lib/ats-logic";
 
 export const POOL = "__pool";
 
@@ -85,11 +67,6 @@ export function WithCandidatePanel({
   children: ReactNode;
 }) {
   const desktop = useIsDesktop();
-  const closeGuard = useRef<(() => void) | null>(null);
-  const registerClose = useCallback((close: (() => void) | null) => {
-    closeGuard.current = close;
-  }, []);
-  const requestClose = () => (closeGuard.current ? closeGuard.current() : onClose());
   const { candidates } = useAts();
   const exists = candidates.some((c) => c.id === candidateId);
   const open = !!candidateId && exists;
@@ -112,30 +89,19 @@ export function WithCandidatePanel({
       {desktop && !side && open && (
         <aside className="glass-card sticky top-20 max-h-[calc(100vh-6rem)] w-[400px] shrink-0 overflow-y-auto rounded-2xl animate-in fade-in slide-in-from-right-4">
           <button
-            onClick={requestClose}
+            onClick={onClose}
             aria-label="Stäng"
             className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-lg text-faint transition hover:bg-surface-high hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>
-          <CandidateDetails
-            candidateId={candidateId}
-            onClose={onClose}
-            onEdit={onEdit}
-            registerClose={registerClose}
-            inline
-          />
+          <CandidateDetails candidateId={candidateId} onClose={onClose} onEdit={onEdit} inline />
         </aside>
       )}
       {!desktop && (
-        <Sheet open={open} onOpenChange={(o) => !o && requestClose()}>
+        <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
           <SheetContent className="w-full overflow-y-auto border-border bg-surface-lowest p-0 sm:max-w-md">
-            <CandidateDetails
-              candidateId={candidateId}
-              onClose={onClose}
-              onEdit={onEdit}
-              registerClose={registerClose}
-            />
+            <CandidateDetails candidateId={candidateId} onClose={onClose} onEdit={onEdit} />
           </SheetContent>
         </Sheet>
       )}
@@ -148,134 +114,24 @@ function CandidateDetails({
   onClose,
   onEdit,
   inline,
-  registerClose,
 }: {
   candidateId: string | null;
   onClose: () => void;
   onEdit: () => void;
   inline?: boolean;
-  registerClose: (close: (() => void) | null) => void;
 }) {
-  const {
-    candidates,
-    users,
-    jobs,
-    activeOrgId,
-    updateCandidate,
-    deleteCandidate,
-    deleteResume,
-    moveCandidate,
-    assignCandidate,
-    addLink,
-    removeLink,
-    can,
-    orgJobs,
-  } = useAts();
+  const { candidates, users, jobs, deleteCandidate, can } = useAts();
   const c = candidates.find((x) => x.id === candidateId) ?? null;
   const job = jobs.find((j) => j.id === c?.jobId);
-  const [note, setNote] = useState("");
-  const [confirmClose, setConfirmClose] = useState(false);
   const [confirm, setConfirm] = useState(false);
-  const [confirmDeleteResume, setConfirmDeleteResume] = useState(false);
-  const [linkLabel, setLinkLabel] = useState("");
-  const [linkUrl, setLinkUrl] = useState("");
-  const [linkError, setLinkError] = useState<string>();
-  const [addingLink, setAddingLink] = useState(false);
-  const canMove = can("moveCandidates");
   const canManage = can("manageCandidates");
-
-  const [ivAt, setIvAt] = useState("");
-  const [ivLink, setIvLink] = useState("");
-  const [ivError, setIvError] = useState<string>();
-  useEffect(() => setNote(c?.note ?? ""), [c?.id, c?.note]);
-  useEffect(() => {
-    setIvAt(c?.interviewAt ?? "");
-    setIvLink(c?.interviewLink ?? "");
-    setIvError(undefined);
-  }, [c?.id, c?.interviewAt, c?.interviewLink]);
-  useEffect(() => {
-    setAddingLink(false);
-    setLinkLabel("");
-    setLinkUrl("");
-    setLinkError(undefined);
-  }, [c?.id]);
-
-  const dirty =
-    !!c &&
-    hasCandidateDraftChanges(
-      { note, interviewAt: ivAt, interviewLink: ivLink },
-      { note: c.note, interviewAt: c.interviewAt, interviewLink: c.interviewLink },
-    );
-  const hasPendingLink = !!(linkLabel.trim() || linkUrl.trim());
-  useEffect(() => {
-    registerClose(() => {
-      if (dirty || hasPendingLink) setConfirmClose(true);
-      else onClose();
-    });
-    return () => registerClose(null);
-  }, [dirty, hasPendingLink, onClose, registerClose]);
 
   if (!c) return null;
   const Title = inline ? "h2" : SheetTitle;
   const Desc = inline ? "p" : SheetDescription;
 
-  const submitLink = () => {
-    const url = normalizeUrl(linkUrl);
-    const label = linkLabel.trim() || "Länk";
-    if (!/^https?:\/\/[^\s.]+\.[^\s]+$/.test(url)) {
-      setLinkError("Ange en giltig adress som börjar med https://");
-      return;
-    }
-    if (label.length > 40) {
-      setLinkError("Namnet får vara max 40 tecken");
-      return;
-    }
-    addLink(c.id, label, url);
-    setLinkLabel("");
-    setLinkUrl("");
-    setLinkError(undefined);
-    setAddingLink(false);
-  };
-
-  const saveAndClose = () => {
-    const link = normalizeUrl(ivLink);
-    if (link && !/^https?:\/\/[^\s.]+\.[^\s]+$/.test(link)) {
-      setIvError("Ange en giltig adress som börjar med https://");
-      setConfirmClose(false);
-      return;
-    }
-    if (hasPendingLink) {
-      const url = normalizeUrl(linkUrl);
-      if (!/^https?:\/\/[^\s.]+\.[^\s]+$/.test(url) || linkLabel.trim().length > 40) {
-        setLinkError("Ange en giltig adress och ett namn på max 40 tecken");
-        setConfirmClose(false);
-        return;
-      }
-      addLink(c.id, linkLabel.trim() || "Länk", url);
-    }
-    updateCandidate(c.id, { note, interviewAt: ivAt, interviewLink: link });
-    setConfirmClose(false);
-    onClose();
-    toast.success("Ändringarna sparades");
-  };
-
   return (
     <div className="flex flex-col gap-6 p-6">
-      <UnsavedCandidateDialog
-        open={confirmClose}
-        onOpenChange={setConfirmClose}
-        onSave={saveAndClose}
-        onDiscard={() => {
-          setNote(c.note);
-          setIvAt(c.interviewAt ?? "");
-          setIvLink(c.interviewLink ?? "");
-          setAddingLink(false);
-          setLinkLabel("");
-          setLinkUrl("");
-          setConfirmClose(false);
-          onClose();
-        }}
-      />
       <div className="flex items-center gap-4 pr-8">
         <Avatar name={c.name} size="lg" />
         <div className="min-w-0">
@@ -296,52 +152,17 @@ function CandidateDetails({
       <div className={cn("grid gap-3", c.jobId && "grid-cols-2")}>
         <div>
           <span className={labelClass}>Tjänst</span>
-          <Select
-            value={c.jobId ?? POOL}
-            disabled={!canManage}
-            onValueChange={(v) => {
-              assignCandidate(c.id, v === POOL ? null : v);
-              toast.success(
-                v === POOL ? "Kandidaten är nu vilande" : "Kandidaten skickades till tjänsten",
-              );
-            }}
-          >
-            <SelectTrigger className="h-10 rounded-xl border-border bg-surface-low">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={POOL}>Vilande</SelectItem>
-              {orgJobs.map((j) => (
-                <SelectItem key={j.id} value={j.id}>
-                  {j.title}
-                  {j.status === "closed" ? " (stängt)" : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex h-10 items-center rounded-xl border border-border bg-surface-low px-3 text-[13px] font-medium text-foreground">
+            <span className="truncate">{job ? job.title : "Vilande"}</span>
+          </div>
         </div>
         {c.jobId && (
           <div>
             <span className={labelClass}>Stadie</span>
-            <Select
-              value={c.stage}
-              disabled={!canMove}
-              onValueChange={(v) => moveCandidate(c.id, v as Stage)}
-            >
-              <SelectTrigger className="h-10 rounded-xl border-border bg-surface-low">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {STAGES.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    <span className="flex items-center gap-2">
-                      <span className={cn("h-2 w-2 rounded-full", stageStyles[s.id].dot)} />
-                      {s.label}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex h-10 items-center gap-2 rounded-xl border border-border bg-surface-low px-3 text-[13px] font-medium text-foreground">
+              <span className={cn("h-2 w-2 rounded-full", stageStyles[c.stage].dot)} />
+              <span>{STAGES.find((s) => s.id === c.stage)?.label ?? c.stage}</span>
+            </div>
           </div>
         )}
       </div>
@@ -396,169 +217,70 @@ function CandidateDetails({
                 </span>
               </a>
               <ExternalLink className="h-3.5 w-3.5 shrink-0 text-faint" />
-              {canManage && (
-                <button
-                  onClick={() => removeLink(c.id, l.id)}
-                  aria-label={`Ta bort ${l.label}`}
-                  className="grid h-6 w-6 shrink-0 place-items-center rounded-md text-faint transition hover:bg-error-bg hover:text-error"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              )}
             </div>
           ))}
-          {c.links.length === 0 && !addingLink && (
-            <p className="text-[12px] text-faint">Inga länkar ännu.</p>
-          )}
+          {c.links.length === 0 && <p className="text-[12px] text-faint">Inga länkar ännu.</p>}
         </div>
-        {canManage &&
-          (addingLink ? (
-            <div className="mt-2 space-y-2 rounded-xl border border-border p-3">
-              <input
-                className={inputClass}
-                placeholder="Namn, t.ex. GitHub eller Portfolio"
-                value={linkLabel}
-                maxLength={40}
-                onChange={(e) => setLinkLabel(e.target.value)}
-                aria-label="Länkens namn"
-              />
-              <input
-                className={inputClass}
-                placeholder="https://"
-                value={linkUrl}
-                maxLength={500}
-                onChange={(e) => setLinkUrl(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && submitLink()}
-                aria-label="Länkens adress"
-              />
-              <FieldError message={linkError} />
-              <div className="flex justify-end gap-2">
-                <Button size="sm" variant="ghost" onClick={() => setAddingLink(false)}>
-                  Avbryt
-                </Button>
-                <Button size="sm" variant="outline" onClick={submitLink}>
-                  <Check /> Lägg till
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <Button size="sm" variant="ghost" className="mt-2" onClick={() => setAddingLink(true)}>
-              <Plus /> Lägg till länk
-            </Button>
-          ))}
       </div>
 
       <div>
         <span className={labelClass}>Intervju</span>
-        <div className="space-y-2 rounded-2xl border border-border bg-surface-low p-3">
-          <div className="flex items-center gap-2">
-            <CalendarClock className="h-4 w-4 shrink-0 text-faint" />
-            <input
-              type="datetime-local"
-              value={ivAt}
-              disabled={!canMove}
-              onChange={(e) => setIvAt(e.target.value)}
-              aria-label="Datum och tid för intervju"
-              className={cn(inputClass, "min-w-0")}
-            />
-            {canMove && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-10 shrink-0"
-                disabled={ivAt === (c.interviewAt ?? "") && ivLink === (c.interviewLink ?? "")}
-                onClick={() => {
-                  const link = normalizeUrl(ivLink);
-                  if (link && !/^https?:\/\/[^\s.]+\.[^\s]+$/.test(link)) {
-                    setIvError("Ange en giltig adress som börjar med https://");
-                    return;
-                  }
-                  setIvError(undefined);
-                  updateCandidate(c.id, { interviewAt: ivAt, interviewLink: link });
-                  toast.success("Intervjun sparades");
-                }}
-              >
-                <Check /> Spara
-              </Button>
-            )}
-            {canMove && (c.interviewAt || c.interviewLink) && (
-              <Button
-                size="icon"
-                variant="ghost"
-                aria-label="Ta bort intervju"
-                className="h-10 w-10 shrink-0 text-faint hover:bg-error-bg hover:text-error"
-                onClick={() => {
-                  updateCandidate(c.id, { interviewAt: "", interviewLink: "" });
-                  toast.success("Intervjun togs bort");
-                }}
-              >
-                <X />
-              </Button>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <Video className="h-4 w-4 shrink-0 text-faint" />
-            <input
-              value={ivLink}
-              disabled={!canMove}
-              maxLength={500}
-              onChange={(e) => setIvLink(e.target.value)}
-              placeholder="Möteslänk, t.ex. https://meet.google.com/…"
-              aria-label="Länk till intervju"
-              className={cn(inputClass, "min-w-0")}
-            />
+        {c.interviewAt || c.interviewLink ? (
+          <div className="space-y-2 rounded-2xl border border-border bg-surface-low p-3 text-[13px]">
+            {c.interviewAt &&
+              (() => {
+                const rel = interviewRelativeDays(c.interviewAt);
+                const urgency = interviewUrgency(c.interviewAt);
+                return (
+                  <div className="flex items-center gap-2">
+                    <CalendarClock className="h-4 w-4 shrink-0 text-faint" />
+                    <span className={cn(urgency === "past" && interviewUrgencyStyles.past)}>
+                      {c.interviewAt.slice(0, 16).replace("T", " kl. ")}
+                      {rel && (
+                        <span className={cn("ml-1.5 font-medium", interviewUrgencyStyles[urgency])}>
+                          ({rel})
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                );
+              })()}
             {c.interviewLink && (
-              <a
-                href={c.interviewLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Öppna möteslänk"
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border text-primary transition hover:bg-surface-high"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </a>
+              <div className="flex items-center gap-2">
+                <Video className="h-4 w-4 shrink-0 text-faint" />
+                <a
+                  href={c.interviewLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-w-0 truncate text-primary hover:underline"
+                >
+                  {c.interviewLink}
+                </a>
+                <ExternalLink className="h-3.5 w-3.5 shrink-0 text-faint" />
+              </div>
             )}
           </div>
-          <FieldError message={ivError} />
-        </div>
+        ) : (
+          <p className="text-[12px] text-faint">Ingen intervju inbokad.</p>
+        )}
       </div>
 
       <div>
-        <label htmlFor="sheet-note" className={labelClass}>
-          Anteckning
-        </label>
-        <textarea
-          id="sheet-note"
-          rows={5}
-          value={note}
-          maxLength={2000}
-          disabled={!canMove}
-          onChange={(e) => setNote(e.target.value)}
-          placeholder="Skriv en anteckning…"
-          className={cn(inputClass, "h-auto py-2.5")}
-        />
-        {canMove && (
-          <div className="mt-2 flex justify-end">
-            <Button
-              size="sm"
-              variant="outline"
-              disabled={note === c.note}
-              onClick={() => {
-                updateCandidate(c.id, { note });
-                toast.success("Anteckningen sparades");
-              }}
-            >
-              <Check /> Spara anteckning
-            </Button>
+        <span className={labelClass}>Anteckning</span>
+        {c.note ? (
+          <div className="rounded-2xl border border-border bg-surface-low p-3.5 text-[13px] leading-relaxed whitespace-pre-wrap">
+            {c.note}
           </div>
+        ) : (
+          <p className="text-[12px] text-faint">Ingen anteckning.</p>
         )}
       </div>
 
       {FEATURES.resumeUpload && c.resumePath && (
-        <div className="flex items-center gap-2 border-t border-border pt-4">
+        <div className="border-t border-border pt-4">
           <Button
             variant="outline"
-            className="flex-1"
+            className="w-full"
             onClick={async () => {
               const win = window.open("", "_blank");
               const { data, error } = await supabase.storage
@@ -583,17 +305,6 @@ function CandidateDetails({
           >
             <FileText /> Visa CV (PDF)
           </Button>
-          {canManage && (
-            <Button
-              size="icon"
-              variant="ghost"
-              aria-label="Ta bort CV"
-              className="h-10 w-10 shrink-0 text-faint hover:bg-error-bg hover:text-error"
-              onClick={() => setConfirmDeleteResume(true)}
-            >
-              <Trash2 />
-            </Button>
-          )}
         </div>
       )}
 
@@ -629,29 +340,6 @@ function CandidateDetails({
                 setConfirm(false);
                 onClose();
                 toast.success("Kandidaten raderades");
-              }}
-            >
-              Radera
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={confirmDeleteResume} onOpenChange={setConfirmDeleteResume}>
-        <AlertDialogContent className="rounded-2xl border-border bg-surface">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-display">Radera CV?</AlertDialogTitle>
-            <AlertDialogDescription>
-              CV:t för {c.name} tas bort permanent. Detta går inte att ångra.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl">Avbryt</AlertDialogCancel>
-            <AlertDialogAction
-              className="rounded-xl bg-destructive text-on-primary hover:bg-destructive/90"
-              onClick={() => {
-                deleteResume(c.id);
-                setConfirmDeleteResume(false);
               }}
             >
               Radera

@@ -139,3 +139,32 @@ export function interviewUrgency(at: string, now: Date = new Date()): InterviewU
   if (diff <= 7 * day) return "week";
   return "later";
 }
+
+/**
+ * Returns relative days string (e.g. "idag", "1 dag", "8 dagar") if within one month in the future.
+ * Returns null if the date has passed or is further away than one month.
+ */
+export function interviewRelativeDays(at: string, now: Date = new Date()): string | null {
+  const target = new Date(at);
+  if (Number.isNaN(target.getTime())) return null;
+
+  const targetDay = new Date(target.getFullYear(), target.getMonth(), target.getDate()).getTime();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const oneMonthAhead = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate()).getTime();
+
+  if (targetDay >= today && targetDay <= oneMonthAhead) {
+    const diffDays = Math.round((targetDay - today) / 86_400_000);
+    return diffDays === 0 ? "idag" : diffDays === 1 ? "1 dag" : `${diffDays} dagar`;
+  }
+  return null;
+}
+
+/**
+ * Format interview timestamp, e.g. "2026-11-18 kl. 11:53 (8 dagar)".
+ * Appends relative days if the date is in the future and within one month.
+ */
+export function formatInterviewTime(at: string, now: Date = new Date()): string {
+  const base = at.slice(0, 16).replace("T", " kl. ");
+  const rel = interviewRelativeDays(at, now);
+  return rel ? `${base} (${rel})` : base;
+}

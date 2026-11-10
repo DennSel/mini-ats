@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ArrowRightLeft, CalendarClock, Linkedin } from "lucide-react";
-import { Avatar, stageStyles } from "@/components/shared";
+import { Avatar, interviewUrgencyStyles, stageStyles } from "@/components/shared";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -73,12 +73,7 @@ export function CandidateCardView({
           <span
             className={cn(
               "flex items-center gap-1 font-mono text-[10px]",
-              {
-                past: "text-faint line-through",
-                soon: "text-error",
-                week: "text-stage-offer",
-                later: "text-muted-foreground",
-              }[interviewUrgency(candidate.interviewAt)],
+              interviewUrgencyStyles[interviewUrgency(candidate.interviewAt)],
             )}
           >
             <CalendarClock className="h-3 w-3" /> {candidate.interviewAt.replace("T", " ")}
