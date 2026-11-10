@@ -94,6 +94,7 @@ export function CandidateDialog({
   const [linkError, setLinkError] = useState<string>();
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [resumeError, setResumeError] = useState<string>();
+  const [removeExistingResume, setRemoveExistingResume] = useState(false);
 
   const pickResume = async (file: File | null) => {
     if (!file) {
@@ -104,6 +105,7 @@ export function CandidateDialog({
     const problem = await validateResumeFile(file);
     setResumeError(problem);
     setResumeFile(problem ? null : file);
+    if (!problem) setRemoveExistingResume(false);
   };
 
   const resumeField = FEATURES.resumeUpload ? (
@@ -126,7 +128,22 @@ export function CandidateDialog({
         </p>
       )}
       {!resumeFile && candidate?.resumePath && (
-        <p className="mt-1 truncate text-[11px] text-faint">CV finns uppladdat sedan tidigare</p>
+        <div className="mt-1 flex items-center justify-between text-[11px]">
+          {removeExistingResume ? (
+            <span className="font-medium text-error">Befintligt CV tas bort vid spara</span>
+          ) : (
+            <>
+              <span className="text-faint">CV finns uppladdat sedan tidigare</span>
+              <button
+                type="button"
+                className="text-error underline hover:no-underline"
+                onClick={() => setRemoveExistingResume(true)}
+              >
+                Ta bort CV
+              </button>
+            </>
+          )}
+        </div>
       )}
       <FieldError message={resumeError} />
     </div>
@@ -153,6 +170,7 @@ export function CandidateDialog({
     setLinkError(undefined);
     setResumeFile(null);
     setResumeError(undefined);
+    setRemoveExistingResume(false);
     reset(
       candidate
         ? {
@@ -183,7 +201,14 @@ export function CandidateDialog({
 
   const requestClose = () => {
     const linksChanged = hasCandidateDraftChanges({ links }, { links: candidate?.links ?? [] });
-    if (isDirty || linksChanged || linkLabel.trim() || linkUrl.trim() || resumeFile)
+    if (
+      isDirty ||
+      linksChanged ||
+      linkLabel.trim() ||
+      linkUrl.trim() ||
+      resumeFile ||
+      removeExistingResume
+    )
       setConfirmClose(true);
     else onOpenChange(false);
   };
@@ -205,7 +230,7 @@ export function CandidateDialog({
       links: savedLinks,
       jobId: v.jobId === POOL ? null : v.jobId,
       stage: v.jobId === POOL ? ("new" as Stage) : v.stage,
-      ...(resumeFile ? { resumeFile } : {}),
+      ...(resumeFile ? { resumeFile } : removeExistingResume ? { resumePath: null } : {}),
     };
     if (candidate) updateCandidate(candidate.id, input);
     else createCandidate(input);

@@ -163,6 +163,7 @@ function CandidateDetails({
     activeOrgId,
     updateCandidate,
     deleteCandidate,
+    deleteResume,
     moveCandidate,
     assignCandidate,
     addLink,
@@ -553,23 +554,35 @@ function CandidateDetails({
       </div>
 
       {FEATURES.resumeUpload && c.resumePath && (
-        <div className="flex border-t border-border pt-4">
+        <div className="flex items-center gap-2 border-t border-border pt-4">
           <Button
             variant="outline"
             className="flex-1"
             onClick={async () => {
               const { data, error } = await supabase.storage
                 .from("resumes")
-                .createSignedUrl(c.resumePath!, 60);
-              if (error || !data?.signedUrl) {
+                .download(c.resumePath!);
+              if (error || !data) {
                 toast.error("Kunde inte öppna CV:t");
                 return;
               }
-              window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+              const blobUrl = URL.createObjectURL(data);
+              window.open(blobUrl, "_blank", "noopener,noreferrer");
             }}
           >
             <FileText /> Visa CV (PDF)
           </Button>
+          {canManage && (
+            <Button
+              size="icon"
+              variant="ghost"
+              aria-label="Ta bort CV"
+              className="h-10 w-10 shrink-0 text-faint hover:bg-error-bg hover:text-error"
+              onClick={() => deleteResume(c.id)}
+            >
+              <Trash2 />
+            </Button>
+          )}
         </div>
       )}
 
