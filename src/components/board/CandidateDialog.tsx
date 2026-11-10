@@ -254,7 +254,7 @@ export function CandidateDialog({
             phone: candidate.phone,
             linkedin: candidate.linkedin,
             note: candidate.note,
-            interviewAt: candidate.interviewAt ?? "",
+            interviewAt: candidate.interviewAt ? candidate.interviewAt.slice(0, 16) : "",
             interviewLink: candidate.interviewLink ?? "",
             jobId: candidate.jobId ?? POOL,
             stage: candidate.stage,

@@ -718,7 +718,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
             location: input.location,
             description: input.description,
             status: input.status,
-            createdAt: new Date().toISOString(),
+            createdAt: new Date().toISOString().slice(0, 10),
           };
           setDemoJobs((prev) => [newJob, ...prev]);
           toast.success("Tjänsten skapades");
@@ -757,13 +757,13 @@ export function AtsProvider({ children }: { children: ReactNode }) {
             linkedin: input.linkedin ?? "",
             links: input.links ?? [],
             note: input.note ?? "",
-            interviewAt: input.interviewAt || undefined,
+            interviewAt: input.interviewAt ? input.interviewAt.slice(0, 16) : undefined,
             interviewLink: input.interviewLink || undefined,
             stage: input.stage ?? "new",
             position: positionBetween(lastPos, undefined),
             resumePath,
             createdBy: effectiveCurrentUser?.id ?? "u-demo-owner",
-            createdAt: new Date().toISOString(),
+            createdAt: new Date().toISOString().slice(0, 10),
           };
           setDemoCandidates((prev) => [...prev, newC]);
           toast.success("Kandidaten lades till");
@@ -788,7 +788,11 @@ export function AtsProvider({ children }: { children: ReactNode }) {
                 ...input,
                 resumePath,
                 interviewAt:
-                  input.interviewAt !== undefined ? input.interviewAt || undefined : c.interviewAt,
+                  input.interviewAt !== undefined
+                    ? input.interviewAt
+                      ? input.interviewAt.slice(0, 16)
+                      : undefined
+                    : c.interviewAt,
                 interviewLink:
                   input.interviewLink !== undefined
                     ? input.interviewLink || undefined
