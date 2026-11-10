@@ -341,6 +341,25 @@ export const deleteOrg = createServerFn({ method: "POST" })
       }
     }
 
+    // Remove stored CVs before the organisation row (and its candidates) go away.
+    // Tolerate a missing resume_path column so deletion still works before the
+    // resume migration has run in a project.
+    const { data: orgCandidates, error: candErr } = await sb
+      .from("candidates")
+      .select("resume_path")
+      .eq("org_id", data.orgId);
+    if (candErr) {
+      if (!candErr.message.includes("resume_path")) throw new Error(candErr.message);
+    } else {
+      const resumePaths = (orgCandidates ?? [])
+        .map((c: { resume_path: string | null }) => c.resume_path)
+        .filter((p): p is string => !!p);
+      if (resumePaths.length > 0) {
+        const { error: removeErr } = await sb.storage.from("resumes").remove(resumePaths);
+        if (removeErr) throw new Error(removeErr.message);
+      }
+    }
+
     const { error: orgDelErr } = await sb.from("orgs").delete().eq("id", data.orgId);
     if (orgDelErr) throw new Error(orgDelErr.message);
 

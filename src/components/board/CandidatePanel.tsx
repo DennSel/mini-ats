@@ -3,6 +3,7 @@ import {
   CalendarClock,
   Video,
   ExternalLink,
+  FileText,
   Link2,
   Linkedin,
   Mail,
@@ -33,6 +34,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { FEATURES } from "@/lib/features";
+import { supabase } from "@/lib/supabase";
 import {
   Avatar,
   FieldError,
@@ -548,6 +551,27 @@ function CandidateDetails({
           </div>
         )}
       </div>
+
+      {FEATURES.resumeUpload && c.resumePath && (
+        <div className="flex border-t border-border pt-4">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={async () => {
+              const { data, error } = await supabase.storage
+                .from("resumes")
+                .createSignedUrl(c.resumePath!, 60);
+              if (error || !data?.signedUrl) {
+                toast.error("Kunde inte öppna CV:t");
+                return;
+              }
+              window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+            }}
+          >
+            <FileText /> Visa CV (PDF)
+          </Button>
+        </div>
+      )}
 
       {canManage && (
         <div className="flex gap-2 border-t border-border pt-4">

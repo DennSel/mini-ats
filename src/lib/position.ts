@@ -113,6 +113,7 @@ export interface CandidateRow {
   position: number;
   created_by?: string | null;
   created_at: string;
+  resume_path?: string | null;
 }
 
 export const toOrganization = (r: OrgRow): Organization => ({
@@ -156,6 +157,7 @@ export const toCandidate = (r: CandidateRow): Candidate => ({
   position: r.position,
   createdAt: String(r.created_at).slice(0, 10),
   createdBy: r.created_by ?? undefined,
+  resumePath: r.resume_path ?? undefined,
 });
 
 export interface SupabaseLike {
