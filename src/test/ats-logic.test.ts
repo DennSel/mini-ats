@@ -8,6 +8,8 @@ import {
   filterCandidates,
   homePathFor,
   interviewUrgency,
+  interviewRelativeDays,
+  formatInterviewTime,
   moveCandidate,
 } from "@/lib/ats-logic";
 import type { Candidate, User } from "@/lib/types";
@@ -157,4 +159,26 @@ describe("interviewUrgency", () => {
     expect(interviewUrgency("2026-11-10T11:00", now)).toBe("soon"));
   it("within a week", () => expect(interviewUrgency("2026-11-13T12:00", now)).toBe("week"));
   it("later than a week", () => expect(interviewUrgency("2026-11-20T12:00", now)).toBe("later"));
+});
+
+describe("formatInterviewTime and interviewRelativeDays", () => {
+  const now = new Date("2026-11-10T12:00");
+  it("formats interview time within a month with relative days", () => {
+    expect(formatInterviewTime("2026-11-18T11:53", now)).toBe("2026-11-18 kl. 11:53 (8 dagar)");
+    expect(formatInterviewTime("2026-11-11T09:00", now)).toBe("2026-11-11 kl. 09:00 (1 dag)");
+    expect(formatInterviewTime("2026-11-10T15:00", now)).toBe("2026-11-10 kl. 15:00 (idag)");
+  });
+  it("omits relative days when further away than one month", () => {
+    expect(formatInterviewTime("2026-12-25T10:00", now)).toBe("2026-12-25 kl. 10:00");
+    expect(interviewRelativeDays("2026-12-25T10:00", now)).toBeNull();
+  });
+  it("omits relative days when in the past", () => {
+    expect(formatInterviewTime("2026-11-05T10:00", now)).toBe("2026-11-05 kl. 10:00");
+    expect(interviewRelativeDays("2026-11-05T10:00", now)).toBeNull();
+  });
+  it("computes relative days separately", () => {
+    expect(interviewRelativeDays("2026-11-18T11:53", now)).toBe("8 dagar");
+    expect(interviewRelativeDays("2026-11-11T09:00", now)).toBe("1 dag");
+    expect(interviewRelativeDays("2026-11-10T15:00", now)).toBe("idag");
+  });
 });

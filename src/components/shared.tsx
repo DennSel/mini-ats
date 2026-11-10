@@ -2,7 +2,7 @@ import { Icon, Minus, Plus, Search, X, type LucideProps } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { initials } from "@/lib/ats-logic";
+import { initials, type InterviewUrgency } from "@/lib/ats-logic";
 import type { Stage, JobStatus } from "@/lib/mock-data";
 import * as React from "react";
 
@@ -211,6 +211,13 @@ export const stageStyles: Record<
     pill: "bg-stage-rejected/10 border-stage-rejected/20 text-stage-rejected",
     hoverBorder: "hover:border-stage-rejected/70",
   },
+};
+
+export const interviewUrgencyStyles: Record<InterviewUrgency, string> = {
+  past: "text-faint line-through",
+  soon: "text-error",
+  week: "text-stage-offer",
+  later: "text-muted-foreground",
 };
 
 export function FieldError({ message }: { message?: string | undefined }) {

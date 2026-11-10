@@ -130,7 +130,16 @@ export function CandidateDialog({
       {!resumeFile && candidate?.resumePath && (
         <div className="mt-1 flex items-center justify-between text-[11px]">
           {removeExistingResume ? (
-            <span className="font-medium text-error">Befintligt CV tas bort vid spara</span>
+            <>
+              <span className="font-medium text-error">Befintligt CV tas bort vid spara</span>
+              <button
+                type="button"
+                className="text-faint underline hover:text-foreground hover:no-underline"
+                onClick={() => setRemoveExistingResume(false)}
+              >
+                Ångra
+              </button>
+            </>
           ) : (
             <>
               <span className="text-faint">CV finns uppladdat sedan tidigare</span>
