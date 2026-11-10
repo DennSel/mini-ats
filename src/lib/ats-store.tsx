@@ -460,7 +460,10 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       } else if (v.input.resumePath === null) {
         const existingPath = candidates.find((c) => c.id === v.id)?.resumePath;
         if (existingPath) {
-          await supabase.storage.from("resumes").remove([existingPath]);
+          const { error: removeErr } = await supabase.storage
+            .from("resumes")
+            .remove([existingPath]);
+          if (removeErr) throw removeErr;
         }
         patch.resume_path = null;
       }
@@ -507,7 +510,10 @@ export function AtsProvider({ children }: { children: ReactNode }) {
     mutationFn: async (id: string) => {
       const candidate = candidates.find((c) => c.id === id);
       if (!candidate?.resumePath) return;
-      await supabase.storage.from("resumes").remove([candidate.resumePath]);
+      const { error: removeErr } = await supabase.storage
+        .from("resumes")
+        .remove([candidate.resumePath]);
+      if (removeErr) throw removeErr;
       const { error } = await supabase
         .from("candidates")
         .update({ resume_path: null })

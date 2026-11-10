@@ -176,6 +176,7 @@ function CandidateDetails({
   const [note, setNote] = useState("");
   const [confirmClose, setConfirmClose] = useState(false);
   const [confirm, setConfirm] = useState(false);
+  const [confirmDeleteResume, setConfirmDeleteResume] = useState(false);
   const [linkLabel, setLinkLabel] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [linkError, setLinkError] = useState<string>();
@@ -559,15 +560,25 @@ function CandidateDetails({
             variant="outline"
             className="flex-1"
             onClick={async () => {
+              const win = window.open("", "_blank");
               const { data, error } = await supabase.storage
                 .from("resumes")
                 .download(c.resumePath!);
               if (error || !data) {
+                win?.close();
                 toast.error("Kunde inte öppna CV:t");
                 return;
               }
-              const blobUrl = URL.createObjectURL(data);
-              window.open(blobUrl, "_blank", "noopener,noreferrer");
+              const blobUrl = URL.createObjectURL(new Blob([data], { type: "application/pdf" }));
+              if (win) {
+                win.location.href = blobUrl;
+              } else {
+                const a = document.createElement("a");
+                a.href = blobUrl;
+                a.download = `${c.name}-cv.pdf`;
+                a.click();
+              }
+              setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
             }}
           >
             <FileText /> Visa CV (PDF)
@@ -578,7 +589,7 @@ function CandidateDetails({
               variant="ghost"
               aria-label="Ta bort CV"
               className="h-10 w-10 shrink-0 text-faint hover:bg-error-bg hover:text-error"
-              onClick={() => deleteResume(c.id)}
+              onClick={() => setConfirmDeleteResume(true)}
             >
               <Trash2 />
             </Button>
@@ -618,6 +629,29 @@ function CandidateDetails({
                 setConfirm(false);
                 onClose();
                 toast.success("Kandidaten raderades");
+              }}
+            >
+              Radera
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmDeleteResume} onOpenChange={setConfirmDeleteResume}>
+        <AlertDialogContent className="rounded-2xl border-border bg-surface">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-display">Radera CV?</AlertDialogTitle>
+            <AlertDialogDescription>
+              CV:t för {c.name} tas bort permanent. Detta går inte att ångra.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Avbryt</AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-xl bg-destructive text-on-primary hover:bg-destructive/90"
+              onClick={() => {
+                deleteResume(c.id);
+                setConfirmDeleteResume(false);
               }}
             >
               Radera
