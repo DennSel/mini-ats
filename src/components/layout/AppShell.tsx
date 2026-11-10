@@ -10,6 +10,7 @@ import {
   Sun,
   LogOut,
   ChevronsUpDown,
+  Sparkles,
 } from "lucide-react";
 import { useAts } from "@/lib/ats-store";
 import { useTheme } from "@/lib/theme";
@@ -106,7 +107,7 @@ function Nav() {
 }
 
 function ProfileMenu() {
-  const { currentUser, logout } = useAts();
+  const { currentUser, logout, isDemo } = useAts();
   const { theme, toggle } = useTheme();
   const navigate = useNavigate();
   if (!currentUser) return null;
@@ -158,7 +159,7 @@ function ProfileMenu() {
             navigate({ to: "/login" });
           }}
         >
-          <LogOut className="h-4 w-4" /> Logga ut
+          <LogOut className="h-4 w-4" /> {isDemo ? "Avsluta demo" : "Logga ut"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -210,7 +211,7 @@ function CustomerBanner() {
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { currentUser } = useAts();
+  const { currentUser, isDemo } = useAts();
   const isAdmin = currentUser?.role === "admin";
   return (
     <div className="relative flex min-h-screen w-full flex-col">
@@ -224,6 +225,16 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Nav />
           </div>
           <div className="flex min-w-0 items-center gap-2">
+            {isDemo && (
+              <div
+                className="flex shrink-0 items-center gap-1.5 rounded-full border border-accent-3/40 bg-accent-3/10 px-2.5 py-1 text-[11px] font-medium text-accent-3"
+                title="Demoläge: Inga ändringar sparas till databasen"
+              >
+                <Sparkles className="h-3 w-3" />
+                <span className="hidden sm:inline">Demoläge (sparas ej)</span>
+                <span className="sm:hidden">Demo</span>
+              </div>
+            )}
             <CustomerBanner />
             <ProfileMenu />
           </div>

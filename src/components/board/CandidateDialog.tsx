@@ -14,8 +14,7 @@ import {
   UserPlus,
   X,
 } from "lucide-react";
-import { toast } from "sonner";
-import { supabase } from "@/lib/supabase";
+import { openResumeInNewTab } from "@/lib/resume-download";
 import {
   Dialog,
   DialogContent,
@@ -112,23 +111,7 @@ export function CandidateDialog({
 
   const viewExistingResume = async () => {
     if (!candidate?.resumePath) return;
-    const win = window.open("", "_blank");
-    const { data, error } = await supabase.storage.from("resumes").download(candidate.resumePath);
-    if (error || !data) {
-      win?.close();
-      toast.error("Kunde inte öppna CV:t");
-      return;
-    }
-    const blobUrl = URL.createObjectURL(new Blob([data], { type: "application/pdf" }));
-    if (win) {
-      win.location.href = blobUrl;
-    } else {
-      const a = document.createElement("a");
-      a.href = blobUrl;
-      a.download = `${candidate.name}-cv.pdf`;
-      a.click();
-    }
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    await openResumeInNewTab(candidate.resumePath, candidate.name);
   };
 
   const pickResume = async (file: File | null) => {

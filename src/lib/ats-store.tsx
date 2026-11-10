@@ -38,6 +38,31 @@ import {
   type PlannedMove,
   type ProfileRow,
 } from "./position";
+import {
+  DEMO_NORDVIK_ID,
+  DEMO_TEAM_MEMBERS,
+  DEMO_USERS,
+  INITIAL_DEMO_CANDIDATES,
+  INITIAL_DEMO_JOBS,
+  INITIAL_DEMO_ORGS,
+  removeDemoResume,
+  storeDemoResume,
+  getStoredDemoLoginEnabled,
+  setStoredDemoLoginEnabled,
+} from "./demo-data";
+
+const DEMO_STORAGE_KEY = "kandsys_demo_role";
+
+function getStoredDemoRole(): "owner" | "admin" | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const role = sessionStorage.getItem(DEMO_STORAGE_KEY);
+    if (role === "owner" || role === "admin") return role;
+  } catch {
+    // sessionStorage not available
+  }
+  return null;
+}
 
 const uid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
 
@@ -95,6 +120,11 @@ interface AtsState {
   updateOrg: (id: string, name: string) => void;
   deleteOrg: (id: string) => void;
   can: (perm: Permission) => boolean;
+  isDemo: boolean;
+  startDemoSession: (role: "owner" | "admin") => void;
+  exitDemoSession: () => void;
+  demoLoginEnabled: boolean;
+  setDemoLoginEnabled: (enabled: boolean) => void;
 }
 
 // Keep one context instance across hot reloads so providers and consumers always match.
@@ -107,12 +137,34 @@ export function AtsProvider({ children }: { children: ReactNode }) {
   const [authReady, setAuthReady] = useState(false);
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
 
+  const [demoRole, setDemoRole] = useState<"owner" | "admin" | null>(getStoredDemoRole);
+  const [demoOrgs, setDemoOrgs] = useState<Organization[]>(INITIAL_DEMO_ORGS);
+  const [demoUsers, setDemoUsers] = useState<User[]>(DEMO_TEAM_MEMBERS);
+  const [demoJobs, setDemoJobs] = useState<Job[]>(INITIAL_DEMO_JOBS);
+  const [demoCandidates, setDemoCandidates] = useState<Candidate[]>(INITIAL_DEMO_CANDIDATES);
+  const [demoLoginEnabled, setDemoLoginEnabledState] = useState<boolean>(getStoredDemoLoginEnabled);
+
+  const setDemoLoginEnabled = useCallback((enabled: boolean) => {
+    setDemoLoginEnabledState(enabled);
+    setStoredDemoLoginEnabled(enabled);
+  }, []);
+
+  const isDemo = Boolean(demoRole);
+  const effectiveCurrentUser = useMemo(
+    () => (demoRole ? DEMO_USERS[demoRole] : currentUser),
+    [demoRole, currentUser],
+  );
+  const effectiveAuthReady = Boolean(demoRole || authReady);
+
   const refreshUser = useCallback(async () => {
+    if (demoRole) {
+      return DEMO_USERS[demoRole];
+    }
     const u = await loadUser();
     setCurrentUser(u);
     setAuthReady(true);
     return u;
-  }, []);
+  }, [demoRole]);
 
   useEffect(() => {
     let active = true;
@@ -159,7 +211,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
 
   const orgsQuery = useQuery({
     queryKey: ["orgs"],
-    enabled: !!currentUser,
+    enabled: !demoRole && !!currentUser,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orgs")
@@ -172,7 +224,7 @@ export function AtsProvider({ children }: { children: ReactNode }) {
 
   const profilesQuery = useQuery({
     queryKey: ["profiles"],
-    enabled: !!currentUser,
+    enabled: !demoRole && !!currentUser,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
@@ -183,8 +235,14 @@ export function AtsProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const organizations = useMemo(() => orgsQuery.data ?? [], [orgsQuery.data]);
-  const users = useMemo(() => profilesQuery.data ?? [], [profilesQuery.data]);
+  const organizations = useMemo(
+    () => (demoRole ? demoOrgs : ((orgsQuery.data ?? []) as Organization[])),
+    [demoRole, demoOrgs, orgsQuery.data],
+  );
+  const users = useMemo(
+    () => (demoRole ? demoUsers : ((profilesQuery.data ?? []) as User[])),
+    [demoRole, demoUsers, profilesQuery.data],
+  );
 
   const effectiveSelectedOrgId = useMemo(() => {
     if (selectedOrgId && organizations.some((o) => o.id === selectedOrgId)) {
@@ -193,31 +251,37 @@ export function AtsProvider({ children }: { children: ReactNode }) {
     return organizations[0]?.id ?? null;
   }, [selectedOrgId, organizations]);
 
-  const activeOrgId = activeOrgFor(currentUser, effectiveSelectedOrgId);
+  const activeOrgId = activeOrgFor(effectiveCurrentUser, effectiveSelectedOrgId);
   const activeOrg = organizations.find((o) => o.id === activeOrgId) ?? null;
 
   const jobsQuery = useQuery({
     queryKey: ["jobs", activeOrgId],
-    enabled: !!currentUser && !!activeOrgId,
+    enabled: !demoRole && !!currentUser && !!activeOrgId,
     queryFn: () => fetchJobs(activeOrgId!),
   });
 
   const candidatesQuery = useQuery({
     queryKey: ["candidates", activeOrgId],
-    enabled: !!currentUser && !!activeOrgId,
+    enabled: !demoRole && !!currentUser && !!activeOrgId,
     queryFn: () => fetchCandidates(activeOrgId!),
   });
 
-  const jobs = useMemo(() => jobsQuery.data ?? [], [jobsQuery.data]);
-  const candidates = useMemo(() => candidatesQuery.data ?? [], [candidatesQuery.data]);
+  const jobs = useMemo(
+    () => (demoRole ? demoJobs : (jobsQuery.data ?? [])),
+    [demoRole, demoJobs, jobsQuery.data],
+  );
+  const candidates = useMemo(
+    () => (demoRole ? demoCandidates : (candidatesQuery.data ?? [])),
+    [demoRole, demoCandidates, candidatesQuery.data],
+  );
 
   const orgJobs = useMemo(
-    () => visibleJobs(currentUser, jobs, activeOrgId),
-    [currentUser, jobs, activeOrgId],
+    () => visibleJobs(effectiveCurrentUser, jobs, activeOrgId),
+    [effectiveCurrentUser, jobs, activeOrgId],
   );
   const orgCandidates = useMemo(
-    () => visibleCandidates(currentUser, candidates, activeOrgId),
-    [currentUser, candidates, activeOrgId],
+    () => visibleCandidates(effectiveCurrentUser, candidates, activeOrgId),
+    [effectiveCurrentUser, candidates, activeOrgId],
   );
 
   const createOrgMut = useMutation({
@@ -575,11 +639,53 @@ export function AtsProvider({ children }: { children: ReactNode }) {
     onSettled: () => void qc.invalidateQueries({ queryKey: ["candidates", activeOrgId] }),
   });
 
+  const startDemoSession = useCallback((role: "owner" | "admin") => {
+    try {
+      sessionStorage.setItem(DEMO_STORAGE_KEY, role);
+    } catch {
+      // sessionStorage blocked
+    }
+    setDemoRole(role);
+    setDemoOrgs(INITIAL_DEMO_ORGS);
+    setDemoUsers(DEMO_TEAM_MEMBERS);
+    setDemoJobs(INITIAL_DEMO_JOBS);
+    setDemoCandidates(INITIAL_DEMO_CANDIDATES);
+    setSelectedOrgId(role === "admin" ? DEMO_NORDVIK_ID : null);
+  }, []);
+
+  const exitDemoSession = useCallback(async () => {
+    try {
+      sessionStorage.removeItem(DEMO_STORAGE_KEY);
+    } catch {
+      // sessionStorage blocked
+    }
+    setDemoRole(null);
+    setDemoOrgs(INITIAL_DEMO_ORGS);
+    setDemoUsers(DEMO_TEAM_MEMBERS);
+    setDemoJobs(INITIAL_DEMO_JOBS);
+    setDemoCandidates(INITIAL_DEMO_CANDIDATES);
+    setSelectedOrgId(null);
+    void refreshUser();
+  }, [refreshUser]);
+
   const logout = useCallback(async () => {
+    if (demoRole) {
+      try {
+        sessionStorage.removeItem(DEMO_STORAGE_KEY);
+      } catch {
+        // sessionStorage blocked
+      }
+      setDemoRole(null);
+      setDemoOrgs(INITIAL_DEMO_ORGS);
+      setDemoUsers(DEMO_TEAM_MEMBERS);
+      setDemoJobs(INITIAL_DEMO_JOBS);
+      setDemoCandidates(INITIAL_DEMO_CANDIDATES);
+      return;
+    }
     await signOut();
     setCurrentUser(null);
     qc.clear();
-  }, [qc]);
+  }, [demoRole, qc]);
 
   const value = useMemo<AtsState>(
     () => ({
@@ -587,8 +693,8 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       organizations,
       jobs,
       candidates,
-      currentUser,
-      authReady,
+      currentUser: effectiveCurrentUser,
+      authReady: effectiveAuthReady,
       selectedOrgId: effectiveSelectedOrgId,
       activeOrgId,
       activeOrg,
@@ -597,32 +703,175 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       refreshUser,
       logout,
       selectOrg: setSelectedOrgId,
+      isDemo,
+      startDemoSession,
+      exitDemoSession,
+      demoLoginEnabled,
+      setDemoLoginEnabled,
       createJob: (input) => {
         if (!activeOrgId) return;
+        if (demoRole) {
+          const newJob: Job = {
+            id: uid("job"),
+            orgId: activeOrgId,
+            title: input.title,
+            location: input.location,
+            description: input.description,
+            status: input.status,
+            createdAt: new Date().toISOString(),
+          };
+          setDemoJobs((prev) => [newJob, ...prev]);
+          toast.success("Tjänsten skapades");
+          return;
+        }
         createJobMut.mutate(input);
       },
       updateJob: (id, input) => {
+        if (demoRole) {
+          setDemoJobs((prev) => prev.map((j) => (j.id === id ? { ...j, ...input } : j)));
+          toast.success("Tjänsten uppdaterades");
+          return;
+        }
         updateJobMut.mutate({ id, input });
       },
       createCandidate: (input) => {
         if (!activeOrgId) return;
+        if (demoRole) {
+          const resumePath = input.resumeFile ? storeDemoResume(input.resumeFile) : null;
+          const inNew = demoCandidates
+            .filter(
+              (x) =>
+                x.orgId === activeOrgId &&
+                (!input.jobId || x.jobId === input.jobId) &&
+                x.stage === "new",
+            )
+            .sort((a, b) => a.position - b.position);
+          const lastPos = inNew[inNew.length - 1]?.position;
+          const newC: Candidate = {
+            id: uid("c"),
+            orgId: activeOrgId,
+            jobId: input.jobId ?? null,
+            name: input.name,
+            email: input.email ?? "",
+            phone: input.phone ?? "",
+            linkedin: input.linkedin ?? "",
+            links: input.links ?? [],
+            note: input.note ?? "",
+            interviewAt: input.interviewAt || undefined,
+            interviewLink: input.interviewLink || undefined,
+            stage: input.stage ?? "new",
+            position: positionBetween(lastPos, undefined),
+            resumePath,
+            createdBy: effectiveCurrentUser?.id ?? "u-demo-owner",
+            createdAt: new Date().toISOString(),
+          };
+          setDemoCandidates((prev) => [...prev, newC]);
+          toast.success("Kandidaten lades till");
+          return;
+        }
         createCandidateMut.mutate(input);
       },
       updateCandidate: (id, input) => {
+        if (demoRole) {
+          setDemoCandidates((prev) =>
+            prev.map((c) => {
+              if (c.id !== id) return c;
+              let resumePath = c.resumePath;
+              if (input.resumeFile) {
+                resumePath = storeDemoResume(input.resumeFile);
+              } else if (input.resumePath === null) {
+                if (c.resumePath?.startsWith("demo:")) removeDemoResume(c.resumePath);
+                resumePath = null;
+              }
+              return {
+                ...c,
+                ...input,
+                resumePath,
+                interviewAt:
+                  input.interviewAt !== undefined ? input.interviewAt || undefined : c.interviewAt,
+                interviewLink:
+                  input.interviewLink !== undefined
+                    ? input.interviewLink || undefined
+                    : c.interviewLink,
+              };
+            }),
+          );
+          toast.success("Kandidaten sparades");
+          return;
+        }
         updateCandidateMut.mutate({ id, input });
       },
       deleteCandidate: (id) => {
+        if (demoRole) {
+          setDemoCandidates((prev) => {
+            const target = prev.find((c) => c.id === id);
+            if (target?.resumePath?.startsWith("demo:")) removeDemoResume(target.resumePath);
+            return prev.filter((c) => c.id !== id);
+          });
+          toast.success("Kandidaten raderades");
+          return;
+        }
         deleteCandidateMut.mutate(id);
       },
       deleteResume: (id) => {
+        if (demoRole) {
+          setDemoCandidates((prev) =>
+            prev.map((c) => {
+              if (c.id !== id) return c;
+              if (c.resumePath?.startsWith("demo:")) removeDemoResume(c.resumePath);
+              return { ...c, resumePath: null };
+            }),
+          );
+          toast.success("CV:t togs bort");
+          return;
+        }
         deleteResumeMut.mutate(id);
       },
       moveCandidate: (id, stage, beforeId) => {
+        if (demoRole) {
+          const planned = planMoveCandidate(demoCandidates, id, stage, beforeId);
+          if (!planned) return;
+          setDemoCandidates((prev) => {
+            if (planned.renumbered) {
+              const map = new Map(planned.renumbered.map((r) => [r.id, r]));
+              return prev
+                .map((c) => {
+                  const r = map.get(c.id);
+                  return r ? { ...c, stage: r.stage, position: r.position } : c;
+                })
+                .sort((a, b) => a.position - b.position);
+            }
+            return prev
+              .map((c) =>
+                c.id === planned.id
+                  ? { ...c, stage: planned.stage, position: planned.position }
+                  : c,
+              )
+              .sort((a, b) => a.position - b.position);
+          });
+          return;
+        }
         const planned = planMoveCandidate(candidates, id, stage, beforeId);
         if (!planned) return;
         moveCandidateMut.mutate(planned);
       },
       assignCandidate: (id, jobId) => {
+        if (demoRole) {
+          setDemoCandidates((prev) => {
+            const c = prev.find((x) => x.id === id);
+            if (!c || c.jobId === jobId) return prev;
+            const inNew = prev
+              .filter((x) => x.orgId === c.orgId && x.id !== id && x.stage === "new")
+              .sort((a, b) => a.position - b.position);
+            const lastPos = inNew[inNew.length - 1]?.position;
+            return prev.map((x) =>
+              x.id === id
+                ? { ...x, jobId, stage: "new", position: positionBetween(lastPos, undefined) }
+                : x,
+            );
+          });
+          return;
+        }
         const c = candidates.find((x) => x.id === id);
         if (!c || c.jobId === jobId) return;
         const inNew = candidates
@@ -639,6 +888,14 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         });
       },
       addLink: (id, label, url) => {
+        if (demoRole) {
+          setDemoCandidates((prev) =>
+            prev.map((c) =>
+              c.id === id ? { ...c, links: [...c.links, { id: uid("l"), label, url }] } : c,
+            ),
+          );
+          return;
+        }
         const c = candidates.find((x) => x.id === id);
         if (!c) return;
         updateCandidateMut.mutate({
@@ -647,6 +904,14 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         });
       },
       removeLink: (id, linkId) => {
+        if (demoRole) {
+          setDemoCandidates((prev) =>
+            prev.map((c) =>
+              c.id === id ? { ...c, links: c.links.filter((l) => l.id !== linkId) } : c,
+            ),
+          );
+          return;
+        }
         const c = candidates.find((x) => x.id === id);
         if (!c) return;
         updateCandidateMut.mutate({
@@ -655,22 +920,73 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         });
       },
       updateUser: (id, input) => {
+        if (demoRole) {
+          setDemoUsers((prev) => prev.map((u) => (u.id === id ? { ...u, ...input } : u)));
+          toast.success("Användaren uppdaterades");
+          return;
+        }
         updateUserMut.mutate({ id, input });
       },
       deleteUser: (id) => {
+        if (demoRole) {
+          setDemoUsers((prev) => prev.filter((u) => u.id !== id));
+          toast.success("Användaren raderades");
+          return;
+        }
         deleteUserMut.mutate(id);
       },
       createOrg: (name) => {
+        if (demoRole) {
+          const newOrg: Organization = {
+            id: uid("org"),
+            name,
+          };
+          setDemoOrgs((prev) => [...prev, newOrg]);
+          toast.success("Organisationen skapades");
+          return;
+        }
         createOrgMut.mutate(name);
       },
       updateOrg: (id, name) => {
+        if (demoRole) {
+          setDemoOrgs((prev) => prev.map((o) => (o.id === id ? { ...o, name } : o)));
+          toast.success("Namnet uppdaterades");
+          return;
+        }
         updateOrgMut.mutate({ id, name });
       },
       deleteOrg: (id) => {
+        if (demoRole) {
+          setDemoOrgs((prev) => prev.filter((o) => o.id !== id));
+          toast.success("Organisationen raderades");
+          return;
+        }
         deleteOrgMut.mutate(id);
       },
-      can: (perm) => canDo(currentUser, perm),
+      can: (perm) => canDo(effectiveCurrentUser, perm),
       createUser: (input, newOrgName) => {
+        if (demoRole) {
+          let orgId = input.orgId;
+          if (newOrgName) {
+            const newOrg: Organization = {
+              id: uid("org"),
+              name: newOrgName,
+            };
+            setDemoOrgs((prev) => [...prev, newOrg]);
+            orgId = newOrg.id;
+          }
+          const newUser: User = {
+            id: uid("u"),
+            name: input.name,
+            email: input.email,
+            role: input.role,
+            orgRole: input.orgRole,
+            orgId,
+          };
+          setDemoUsers((prev) => [...prev, newUser]);
+          toast.success("Användaren skapades");
+          return;
+        }
         createUserMut.mutate({ input, newOrgName });
       },
     }),
@@ -679,8 +995,8 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       organizations,
       jobs,
       candidates,
-      currentUser,
-      authReady,
+      effectiveCurrentUser,
+      effectiveAuthReady,
       effectiveSelectedOrgId,
       activeOrgId,
       activeOrg,
@@ -688,6 +1004,13 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       orgCandidates,
       refreshUser,
       logout,
+      isDemo,
+      startDemoSession,
+      exitDemoSession,
+      demoLoginEnabled,
+      setDemoLoginEnabled,
+      demoRole,
+      demoCandidates,
       createJobMut,
       updateJobMut,
       createCandidateMut,

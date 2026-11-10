@@ -26,12 +26,12 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { FEATURES } from "@/lib/features";
-import { supabase } from "@/lib/supabase";
+import { openResumeInNewTab } from "@/lib/resume-download";
 import { Avatar, interviewUrgencyStyles, labelClass, stageStyles } from "@/components/shared";
 import { cn } from "@/lib/utils";
 import { useAts } from "@/lib/ats-store";
 import { STAGES } from "@/lib/mock-data";
-import { interviewRelativeDays, interviewUrgency } from "@/lib/ats-logic";
+import { formatDate, interviewRelativeDays, interviewUrgency } from "@/lib/ats-logic";
 
 export const POOL = "__pool";
 
@@ -140,7 +140,7 @@ function CandidateDetails({
             {job?.title ?? "Vilande"}
           </Desc>
           <p className="mt-0.5 truncate text-[11px] text-faint">
-            Tillagd {c.createdAt}
+            Tillagd {formatDate(c.createdAt)}
             {(() => {
               const by = users.find((u) => u.id === c.createdBy);
               return by ? ` av ${by.name}` : "";
@@ -283,27 +283,7 @@ function CandidateDetails({
             <Button
               variant="outline"
               className="w-full"
-              onClick={async () => {
-                const win = window.open("", "_blank");
-                const { data, error } = await supabase.storage
-                  .from("resumes")
-                  .download(c.resumePath!);
-                if (error || !data) {
-                  win?.close();
-                  toast.error("Kunde inte öppna CV:t");
-                  return;
-                }
-                const blobUrl = URL.createObjectURL(new Blob([data], { type: "application/pdf" }));
-                if (win) {
-                  win.location.href = blobUrl;
-                } else {
-                  const a = document.createElement("a");
-                  a.href = blobUrl;
-                  a.download = `${c.name}-cv.pdf`;
-                  a.click();
-                }
-                setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-              }}
+              onClick={() => void openResumeInNewTab(c.resumePath!, c.name)}
             >
               <FileText /> Visa CV (PDF)
             </Button>

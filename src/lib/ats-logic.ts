@@ -168,3 +168,11 @@ export function formatInterviewTime(at: string, now: Date = new Date()): string 
   const rel = interviewRelativeDays(at, now);
   return rel ? `${base} (${rel})` : base;
 }
+
+/**
+ * Format ISO timestamp to date string "YYYY-MM-DD".
+ */
+export function formatDate(iso?: string | null): string {
+  if (!iso) return "";
+  return iso.slice(0, 10);
+}
