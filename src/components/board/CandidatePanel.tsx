@@ -276,35 +276,40 @@ function CandidateDetails({
         )}
       </div>
 
-      {FEATURES.resumeUpload && c.resumePath && (
-        <div className="border-t border-border pt-4">
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={async () => {
-              const win = window.open("", "_blank");
-              const { data, error } = await supabase.storage
-                .from("resumes")
-                .download(c.resumePath!);
-              if (error || !data) {
-                win?.close();
-                toast.error("Kunde inte öppna CV:t");
-                return;
-              }
-              const blobUrl = URL.createObjectURL(new Blob([data], { type: "application/pdf" }));
-              if (win) {
-                win.location.href = blobUrl;
-              } else {
-                const a = document.createElement("a");
-                a.href = blobUrl;
-                a.download = `${c.name}-cv.pdf`;
-                a.click();
-              }
-              setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-            }}
-          >
-            <FileText /> Visa CV (PDF)
-          </Button>
+      {FEATURES.resumeUpload && (
+        <div>
+          <span className={labelClass}>CV</span>
+          {c.resumePath ? (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={async () => {
+                const win = window.open("", "_blank");
+                const { data, error } = await supabase.storage
+                  .from("resumes")
+                  .download(c.resumePath!);
+                if (error || !data) {
+                  win?.close();
+                  toast.error("Kunde inte öppna CV:t");
+                  return;
+                }
+                const blobUrl = URL.createObjectURL(new Blob([data], { type: "application/pdf" }));
+                if (win) {
+                  win.location.href = blobUrl;
+                } else {
+                  const a = document.createElement("a");
+                  a.href = blobUrl;
+                  a.download = `${c.name}-cv.pdf`;
+                  a.click();
+                }
+                setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+              }}
+            >
+              <FileText /> Visa CV (PDF)
+            </Button>
+          ) : (
+            <p className="text-[12px] text-faint">Inget CV uppladdat.</p>
+          )}
         </div>
       )}
 

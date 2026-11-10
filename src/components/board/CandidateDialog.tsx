@@ -1,8 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { CalendarClock, Video, Check, FileText, Link2, Plus, UserPlus, X } from "lucide-react";
+import {
+  CalendarClock,
+  Video,
+  Check,
+  FileText,
+  Link2,
+  Plus,
+  Trash2,
+  Undo2,
+  UserPlus,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
 import {
   Dialog,
   DialogContent,
@@ -95,65 +108,135 @@ export function CandidateDialog({
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [resumeError, setResumeError] = useState<string>();
   const [removeExistingResume, setRemoveExistingResume] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const viewExistingResume = async () => {
+    if (!candidate?.resumePath) return;
+    const win = window.open("", "_blank");
+    const { data, error } = await supabase.storage.from("resumes").download(candidate.resumePath);
+    if (error || !data) {
+      win?.close();
+      toast.error("Kunde inte öppna CV:t");
+      return;
+    }
+    const blobUrl = URL.createObjectURL(new Blob([data], { type: "application/pdf" }));
+    if (win) {
+      win.location.href = blobUrl;
+    } else {
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `${candidate.name}-cv.pdf`;
+      a.click();
+    }
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+  };
 
   const pickResume = async (file: File | null) => {
     if (!file) {
       setResumeFile(null);
       setResumeError(undefined);
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
     const problem = await validateResumeFile(file);
     setResumeError(problem);
     setResumeFile(problem ? null : file);
     if (!problem) setRemoveExistingResume(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
+
+  const hasExistingResume = Boolean(candidate?.resumePath && !removeExistingResume);
 
   const resumeField = FEATURES.resumeUpload ? (
     <div>
       <span className={labelClass}>CV (PDF, max 5 MB)</span>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/pdf,.pdf"
+        aria-label="CV som PDF"
+        className="sr-only"
+        onChange={(e) => void pickResume(e.target.files?.[0] ?? null)}
+      />
       <div className="flex min-w-0 items-center gap-2">
-        <FileText className="h-4 w-4 shrink-0 text-faint" />
-        <input
-          type="file"
-          accept="application/pdf,.pdf"
-          aria-label="CV som PDF"
-          className="block w-full min-w-0 text-[12px] text-muted-foreground file:mr-3 file:cursor-pointer file:rounded-xl file:border-0 file:bg-surface-high file:px-3 file:py-1.5 file:text-[12px] file:font-semibold file:text-foreground"
-          onChange={(e) => void pickResume(e.target.files?.[0] ?? null)}
-        />
-      </div>
-      {resumeFile && (
-        <p className="mt-1 truncate text-[11px] text-muted-foreground">
-          {resumeFile.name} ({formatBytes(resumeFile.size)}){" "}
-          {candidate?.resumePath && <span className="text-faint">(ersätter befintligt CV)</span>}
-        </p>
-      )}
-      {!resumeFile && candidate?.resumePath && (
-        <div className="mt-1 flex items-center justify-between text-[11px]">
-          {removeExistingResume ? (
-            <>
-              <span className="font-medium text-error">Befintligt CV tas bort vid spara</span>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-9 shrink-0 gap-1.5"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <FileText className="h-4 w-4 text-faint" />
+          {hasExistingResume ? "Ersätt fil" : "Välj fil"}
+        </Button>
+
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          {resumeFile ? (
+            <div className="inline-flex h-9 min-w-0 max-w-full items-center gap-2 rounded-xl border border-border bg-surface-low pl-3 pr-1.5 text-[12px]">
+              <FileText className="h-4 w-4 shrink-0 text-accent-3" />
+              <span className="min-w-0 truncate font-medium text-foreground leading-normal">
+                {resumeFile.name}
+              </span>
+              <span className="shrink-0 text-faint leading-normal">
+                ({formatBytes(resumeFile.size)})
+              </span>
+              {candidate?.resumePath && (
+                <span className="hidden shrink-0 text-faint sm:inline leading-normal">
+                  (ersätter befintligt)
+                </span>
+              )}
               <button
                 type="button"
-                className="text-faint underline hover:text-foreground hover:no-underline"
-                onClick={() => setRemoveExistingResume(false)}
+                aria-label="Ta bort vald fil"
+                title="Ta bort vald fil"
+                onClick={() => void pickResume(null)}
+                className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-faint transition hover:bg-surface-high hover:text-foreground"
               >
-                Ångra
+                <X className="h-3.5 w-3.5" />
               </button>
-            </>
+            </div>
+          ) : candidate?.resumePath ? (
+            removeExistingResume ? (
+              <div className="inline-flex h-9 min-w-0 max-w-full items-center gap-2 rounded-xl border border-error/30 bg-error-bg/20 pl-3 pr-1.5 text-[12px]">
+                <span className="truncate text-error line-through leading-normal">
+                  CV tas bort vid spara
+                </span>
+                <button
+                  type="button"
+                  aria-label="Ångra borttagning av CV"
+                  title="Ångra"
+                  onClick={() => setRemoveExistingResume(false)}
+                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-faint transition hover:bg-surface-high hover:text-foreground"
+                >
+                  <Undo2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="inline-flex h-9 min-w-0 max-w-full items-center gap-2 rounded-xl border border-border bg-surface-low pl-3 pr-1.5 text-[12px]">
+                <button
+                  type="button"
+                  onClick={viewExistingResume}
+                  title="Klicka för att visa befintligt CV"
+                  className="inline-flex min-w-0 items-center gap-1.5 font-medium text-foreground transition hover:text-accent-3"
+                >
+                  <FileText className="h-4 w-4 shrink-0 text-accent-3" />
+                  <span className="truncate leading-normal">Visa befintligt CV (PDF)</span>
+                </button>
+                <button
+                  type="button"
+                  aria-label="Ta bort befintligt CV"
+                  title="Ta bort CV"
+                  onClick={() => setRemoveExistingResume(true)}
+                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-faint transition hover:bg-error-bg hover:text-error"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )
           ) : (
-            <>
-              <span className="text-faint">CV finns uppladdat sedan tidigare</span>
-              <button
-                type="button"
-                className="text-error underline hover:no-underline"
-                onClick={() => setRemoveExistingResume(true)}
-              >
-                Ta bort CV
-              </button>
-            </>
+            <span className="text-[12px] text-faint">Ingen fil vald</span>
           )}
         </div>
-      )}
+      </div>
       <FieldError message={resumeError} />
     </div>
   ) : null;
@@ -308,6 +391,54 @@ export function CandidateDialog({
                 />
                 <FieldError message={errors.name?.message} />
               </div>
+              <div className={cn("grid gap-4", candidate && "sm:grid-cols-2")}>
+                <div>
+                  <span className={labelClass}>Tjänst</span>
+                  <Controller
+                    control={control}
+                    name="jobId"
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger className="h-10 rounded-xl border-border bg-surface-low">
+                          <SelectValue placeholder="Välj tjänst" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={POOL}>Vilande (ingen tjänst)</SelectItem>
+                          {orgJobs.map((j) => (
+                            <SelectItem key={j.id} value={j.id}>
+                              {j.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  <FieldError message={errors.jobId?.message} />
+                </div>
+                {candidate && (
+                  <div>
+                    <span className={labelClass}>Stadie</span>
+                    <Controller
+                      control={control}
+                      name="stage"
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger className="h-10 rounded-xl border-border bg-surface-low">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {STAGES.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {s.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                )}
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className={labelClass} htmlFor="c-email">
@@ -403,54 +534,6 @@ export function CandidateDialog({
                   </Button>
                 </div>
                 <FieldError message={linkError} />
-              </div>
-              <div className={cn("grid gap-4", candidate && "sm:grid-cols-2")}>
-                <div>
-                  <span className={labelClass}>Tjänster</span>
-                  <Controller
-                    control={control}
-                    name="jobId"
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="h-10 rounded-xl border-border bg-surface-low">
-                          <SelectValue placeholder="Välj tjänst" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={POOL}>Vilande (ingen tjänst)</SelectItem>
-                          {orgJobs.map((j) => (
-                            <SelectItem key={j.id} value={j.id}>
-                              {j.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  <FieldError message={errors.jobId?.message} />
-                </div>
-                {candidate && (
-                  <div>
-                    <span className={labelClass}>Stadie</span>
-                    <Controller
-                      control={control}
-                      name="stage"
-                      render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger className="h-10 rounded-xl border-border bg-surface-low">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {STAGES.map((s) => (
-                              <SelectItem key={s.id} value={s.id}>
-                                {s.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
-                )}
               </div>
               {interviewFields}
               <div>
@@ -504,6 +587,54 @@ export function CandidateDialog({
                 />
                 <FieldError message={errors.name?.message} />
               </div>
+              <div className={cn("grid gap-4", candidate && "sm:grid-cols-2")}>
+                <div>
+                  <span className={labelClass}>Tjänst</span>
+                  <Controller
+                    control={control}
+                    name="jobId"
+                    render={({ field }) => (
+                      <Select value={field.value} onValueChange={field.onChange}>
+                        <SelectTrigger className="h-10 rounded-xl border-border bg-surface-low">
+                          <SelectValue placeholder="Välj tjänst" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={POOL}>Vilande (ingen tjänst)</SelectItem>
+                          {orgJobs.map((j) => (
+                            <SelectItem key={j.id} value={j.id}>
+                              {j.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  <FieldError message={errors.jobId?.message} />
+                </div>
+                {candidate && (
+                  <div>
+                    <span className={labelClass}>Stadie</span>
+                    <Controller
+                      control={control}
+                      name="stage"
+                      render={({ field }) => (
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <SelectTrigger className="h-10 rounded-xl border-border bg-surface-low">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {STAGES.map((s) => (
+                              <SelectItem key={s.id} value={s.id}>
+                                {s.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
+                  </div>
+                )}
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className={labelClass} htmlFor="c-email">
@@ -599,54 +730,6 @@ export function CandidateDialog({
                   </Button>
                 </div>
                 <FieldError message={linkError} />
-              </div>
-              <div className={cn("grid gap-4", candidate && "sm:grid-cols-2")}>
-                <div>
-                  <span className={labelClass}>Tjänst</span>
-                  <Controller
-                    control={control}
-                    name="jobId"
-                    render={({ field }) => (
-                      <Select value={field.value} onValueChange={field.onChange}>
-                        <SelectTrigger className="h-10 rounded-xl border-border bg-surface-low">
-                          <SelectValue placeholder="Välj tjänst" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={POOL}>Vilande (ingen tjänst)</SelectItem>
-                          {orgJobs.map((j) => (
-                            <SelectItem key={j.id} value={j.id}>
-                              {j.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  <FieldError message={errors.jobId?.message} />
-                </div>
-                {candidate && (
-                  <div>
-                    <span className={labelClass}>Stadie</span>
-                    <Controller
-                      control={control}
-                      name="stage"
-                      render={({ field }) => (
-                        <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger className="h-10 rounded-xl border-border bg-surface-low">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {STAGES.map((s) => (
-                              <SelectItem key={s.id} value={s.id}>
-                                {s.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
-                    />
-                  </div>
-                )}
               </div>
               {interviewFields}
               <div>
