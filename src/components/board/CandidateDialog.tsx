@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { CalendarClock, Video, Check, Link2, Plus, UserPlus, X } from "lucide-react";
+import { CalendarClock, Video, Check, FileText, Link2, Plus, UserPlus, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,6 +21,8 @@ import { Button } from "@/components/ui/button";
 import { FieldError, inputClass, labelClass, normalizeUrl } from "@/components/shared";
 import { cn } from "@/lib/utils";
 import { useAts } from "@/lib/ats-store";
+import { FEATURES } from "@/lib/features";
+import { formatBytes, validateResumeFile } from "@/lib/resume-file";
 import { STAGES, type Candidate, type CandidateLink, type Stage } from "@/lib/mock-data";
 import { POOL } from "./CandidatePanel";
 import { UnsavedCandidateDialog } from "./UnsavedCandidateDialog";
@@ -90,6 +92,45 @@ export function CandidateDialog({
   const [linkLabel, setLinkLabel] = useState("");
   const [linkUrl, setLinkUrl] = useState("");
   const [linkError, setLinkError] = useState<string>();
+  const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [resumeError, setResumeError] = useState<string>();
+
+  const pickResume = async (file: File | null) => {
+    if (!file) {
+      setResumeFile(null);
+      setResumeError(undefined);
+      return;
+    }
+    const problem = await validateResumeFile(file);
+    setResumeError(problem);
+    setResumeFile(problem ? null : file);
+  };
+
+  const resumeField = FEATURES.resumeUpload ? (
+    <div>
+      <span className={labelClass}>CV (PDF, max 5 MB)</span>
+      <div className="flex min-w-0 items-center gap-2">
+        <FileText className="h-4 w-4 shrink-0 text-faint" />
+        <input
+          type="file"
+          accept="application/pdf,.pdf"
+          aria-label="CV som PDF"
+          className="block w-full min-w-0 text-[12px] text-muted-foreground file:mr-3 file:cursor-pointer file:rounded-xl file:border-0 file:bg-surface-high file:px-3 file:py-1.5 file:text-[12px] file:font-semibold file:text-foreground"
+          onChange={(e) => void pickResume(e.target.files?.[0] ?? null)}
+        />
+      </div>
+      {resumeFile && (
+        <p className="mt-1 truncate text-[11px] text-muted-foreground">
+          {resumeFile.name} ({formatBytes(resumeFile.size)}){" "}
+          {candidate?.resumePath && <span className="text-faint">(ersätter befintligt CV)</span>}
+        </p>
+      )}
+      {!resumeFile && candidate?.resumePath && (
+        <p className="mt-1 truncate text-[11px] text-faint">CV finns uppladdat sedan tidigare</p>
+      )}
+      <FieldError message={resumeError} />
+    </div>
+  ) : null;
 
   const addPendingLink = () => {
     const url = normalizeUrl(linkUrl);
@@ -110,6 +151,8 @@ export function CandidateDialog({
     setLinkLabel("");
     setLinkUrl("");
     setLinkError(undefined);
+    setResumeFile(null);
+    setResumeError(undefined);
     reset(
       candidate
         ? {
@@ -140,7 +183,8 @@ export function CandidateDialog({
 
   const requestClose = () => {
     const linksChanged = hasCandidateDraftChanges({ links }, { links: candidate?.links ?? [] });
-    if (isDirty || linksChanged || linkLabel.trim() || linkUrl.trim()) setConfirmClose(true);
+    if (isDirty || linksChanged || linkLabel.trim() || linkUrl.trim() || resumeFile)
+      setConfirmClose(true);
     else onOpenChange(false);
   };
 
@@ -161,6 +205,7 @@ export function CandidateDialog({
       links: savedLinks,
       jobId: v.jobId === POOL ? null : v.jobId,
       stage: v.jobId === POOL ? ("new" as Stage) : v.stage,
+      ...(resumeFile ? { resumeFile } : {}),
     };
     if (candidate) updateCandidate(candidate.id, input);
     else createCandidate(input);
@@ -386,6 +431,7 @@ export function CandidateDialog({
                 />
                 <FieldError message={errors.note?.message} />
               </div>
+              {resumeField}
               <div className="flex justify-end gap-2 border-t border-border pt-4">
                 <Button type="button" variant="ghost" onClick={requestClose}>
                   Avbryt
@@ -581,6 +627,7 @@ export function CandidateDialog({
                 />
                 <FieldError message={errors.note?.message} />
               </div>
+              {resumeField}
               <div className="flex justify-end gap-2 border-t border-border pt-4">
                 <Button type="button" variant="ghost" onClick={requestClose}>
                   Avbryt

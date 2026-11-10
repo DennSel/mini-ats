@@ -61,6 +61,8 @@ export interface Candidate {
   createdAt: string;
   /** User id of the member who added the candidate */
   createdBy?: string | undefined;
+  /** Storage path of the uploaded CV, "<org_id>/<candidate_id>/cv.pdf" */
+  resumePath?: string | undefined;
 }
 
 export const STAGES: { id: Stage; label: string }[] = [

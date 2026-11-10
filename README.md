@@ -94,7 +94,7 @@ Organization 1─* Candidate *─1 Job   (job_id nullable)
   role (`owner`, `member`, `viewer`), `orgId`.
 - **Job** — `title`, `location`, `description`, `status` (`open`/`closed`), `createdAt`.
 - **Candidate** — `name`, `email`, `phone`, LinkedIn URL, additional links (`label` + `url`),
-  free-text note, optional interview time/link, `stage`, `position`, `createdBy`, `createdAt`.
+  free-text note, optional interview time/link, optional `resumePath` (private Storage path, e.g. `<org_id>/<candidate_id>/cv.pdf`), `stage`, `position`, `createdBy`, `createdAt`.
   A candidate belongs to one job, or to none (`job_id` null = the organisation's dormant pool,
   visible to the whole organisation). Within a kanban column the order is kept by a `position`
   value (`double precision`) so drag and drop survives persistence.
@@ -175,6 +175,7 @@ Not done yet — required before onboarding a first customer:
   row level security keeps organisations isolated (verified by tests, not by the UI), and
   replace the demo temporary-password creation (`email_confirm: true`) with an email
   invitation flow (`auth.admin.inviteUserByEmail`) or forced password change on first login.
+- **Resume and CV storage:** CVs are stored in a private Supabase Storage bucket (`resumes`, max 5 MB, PDF only) with RLS enforcing organisation boundaries. Signed URLs expire after 60 seconds, and files are cleaned up on candidate and organisation deletion. Before production, ensure explicit candidate consent is gathered for CV storage and define an automated purge policy for old files.
 
 ## Tech stack
 

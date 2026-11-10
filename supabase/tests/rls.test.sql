@@ -1,5 +1,5 @@
 begin;
-select plan(12);
+select plan(17);
 
 -- Start from a clean slate inside the rolled-back test transaction even if seed.sql ran
 truncate table candidates, jobs, profiles, orgs cascade;
@@ -82,6 +82,56 @@ do $$ begin perform set_config('request.jwt.claims',
 set local role authenticated;
 select is((select count(*) from candidates)::int, 3, '9: Admin sees candidates from both orgs');
 reset role;
+
+-- Resume storage (0005): objects fixture per candidate, inserted as postgres (bypasses RLS)
+insert into storage.objects (bucket_id, name, owner, metadata)
+select 'resumes', '11111111-1111-1111-1111-111111111111/' || c.id::text || '/cv.pdf',
+       'cccccccc-0000-0000-0000-00000000000c', '{"mimetype":"application/pdf","size":1000}'::jsonb
+from candidates c where c.name = 'Candidate A';
+insert into storage.objects (bucket_id, name, owner, metadata)
+select 'resumes', '22222222-2222-2222-2222-222222222222/' || c.id::text || '/cv.pdf',
+       'bbbbbbbb-0000-0000-0000-00000000000b', '{"mimetype":"application/pdf","size":1000}'::jsonb
+from candidates c where c.name = 'Candidate B';
+
+-- As Member A (restricted job access must not affect resume visibility)
+do $$ begin perform set_config('request.jwt.claims',
+  '{"sub":"cccccccc-0000-0000-0000-00000000000c","role":"authenticated"}', true); end $$;
+set local role authenticated;
+select is(
+  (select count(*) from storage.objects where bucket_id = 'resumes')::int,
+  1, '13: Member A sees only resume files from own organisation');
+select throws_ok(
+  $q$insert into storage.objects (bucket_id, name, owner, metadata)
+     values ('resumes', '22222222-2222-2222-2222-222222222222/' ||
+       (select c.id::text from candidates c where c.name = 'Candidate A') || '/cv.pdf',
+       'cccccccc-0000-0000-0000-00000000000c', '{"mimetype":"application/pdf","size":1000}'::jsonb)$q$,
+  '42501', null, '14: Member A cannot upload into another organisation''s folder');
+select throws_ok(
+  $q$insert into storage.objects (bucket_id, name, owner, metadata)
+     values ('resumes', '11111111-1111-1111-1111-111111111111/00000000-0000-0000-0000-00000000dead/cv.pdf',
+       'cccccccc-0000-0000-0000-00000000000c', '{"mimetype":"application/pdf","size":1000}'::jsonb)$q$,
+  '42501', null, '15: Member A cannot upload to a path without a real candidate');
+reset role;
+
+-- Viewers can read but not upload
+update profiles set org_role = 'viewer' where id = 'cccccccc-0000-0000-0000-00000000000c';
+do $$ begin perform set_config('request.jwt.claims',
+  '{"sub":"cccccccc-0000-0000-0000-00000000000c","role":"authenticated"}', true); end $$;
+set local role authenticated;
+select is(
+  (select count(*) from storage.objects where bucket_id = 'resumes')::int,
+  1, '16: Viewer still reads resume files from own organisation');
+select throws_ok(
+  $q$insert into storage.objects (bucket_id, name, owner, metadata)
+     values ('resumes', '11111111-1111-1111-1111-111111111111/' ||
+       (select c.id::text from candidates c where c.name = 'Candidate A') || '/cv.pdf',
+       'cccccccc-0000-0000-0000-00000000000c', '{"mimetype":"application/pdf","size":1000}'::jsonb)$q$,
+  '42501', null, '17: Viewer cannot upload a resume file');
+reset role;
+update profiles set org_role = 'member' where id = 'cccccccc-0000-0000-0000-00000000000c';
+
+-- Note: file deletion goes through the Storage API from the app (Supabase blocks
+-- direct deletes on storage.objects), so it is not covered by pgTAP here.
 
 select * from finish();
 rollback;

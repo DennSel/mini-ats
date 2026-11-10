@@ -4,4 +4,5 @@ export const FEATURES = {
   adminEditUser: true, // 09 #14
   adminDeleteUser: true, // 09 #14
   jobAccess: true, // 09 #16
+  resumeUpload: true, // 09 #15
 } as const;

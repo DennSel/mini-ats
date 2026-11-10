@@ -49,6 +49,8 @@ export type CandidateInput = Omit<
   stage?: Stage;
   links?: Candidate["links"];
   position?: number;
+  /** Staged CV upload; sent to the resumes bucket after the candidate row exists. */
+  resumeFile?: File | undefined;
 };
 export type UserInput = Omit<User, "id"> & {
   password?: string | undefined;
@@ -73,7 +75,10 @@ interface AtsState {
   createJob: (input: JobInput) => void;
   updateJob: (id: string, input: Partial<JobInput>) => void;
   createCandidate: (input: CandidateInput) => void;
-  updateCandidate: (id: string, input: Partial<Omit<Candidate, "id">>) => void;
+  updateCandidate: (
+    id: string,
+    input: Partial<Omit<Candidate, "id">> & { resumeFile?: File | undefined },
+  ) => void;
   deleteCandidate: (id: string) => void;
   moveCandidate: (id: string, stage: Stage, beforeId?: string | null) => void;
   assignCandidate: (id: string, jobId: string | null) => void;
@@ -391,30 +396,62 @@ export function AtsProvider({ children }: { children: ReactNode }) {
       const lastPos = inStage[inStage.length - 1]?.position;
       const position = input.position ?? positionBetween(lastPos, undefined);
 
-      const { error } = await supabase.from("candidates").insert({
-        org_id: activeOrgId,
-        job_id: input.jobId ?? null,
-        name: input.name,
-        email: input.email,
-        phone: input.phone,
-        linkedin: input.linkedin,
-        note: input.note,
-        links: input.links ?? [],
-        interview_at: input.interviewAt ? input.interviewAt : null,
-        interview_link: input.interviewLink ? input.interviewLink : null,
-        stage,
-        position,
-        created_by: currentUser?.id ?? null,
-      });
+      const { data: created, error } = await supabase
+        .from("candidates")
+        .insert({
+          org_id: activeOrgId,
+          job_id: input.jobId ?? null,
+          name: input.name,
+          email: input.email,
+          phone: input.phone,
+          linkedin: input.linkedin,
+          note: input.note,
+          links: input.links ?? [],
+          interview_at: input.interviewAt ? input.interviewAt : null,
+          interview_link: input.interviewLink ? input.interviewLink : null,
+          stage,
+          position,
+          created_by: currentUser?.id ?? null,
+        })
+        .select("id")
+        .single();
       if (error) throw error;
+
+      if (input.resumeFile) {
+        const path = `${activeOrgId}/${created!.id}/cv.pdf`;
+        const { error: uploadErr } = await supabase.storage
+          .from("resumes")
+          .upload(path, input.resumeFile, { contentType: "application/pdf", upsert: true });
+        if (uploadErr) throw uploadErr;
+        const { error: pathErr } = await supabase
+          .from("candidates")
+          .update({ resume_path: path })
+          .eq("id", created!.id);
+        if (pathErr) throw pathErr;
+      }
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["candidates", activeOrgId] }),
     onError: () => toast.error("Kunde inte lägga till kandidaten"),
   });
 
   const updateCandidateMut = useMutation({
-    mutationFn: async (v: { id: string; input: Partial<Omit<Candidate, "id">> }) => {
+    mutationFn: async (v: {
+      id: string;
+      input: Partial<Omit<Candidate, "id">> & { resumeFile?: File | undefined };
+    }) => {
       const patch: Partial<CandidateRow> = {};
+
+      if (v.input.resumeFile) {
+        const orgId = candidates.find((c) => c.id === v.id)?.orgId ?? activeOrgId;
+        if (!orgId) throw new Error("Ingen aktiv organisation");
+        const path = `${orgId}/${v.id}/cv.pdf`;
+        const { error: uploadErr } = await supabase.storage
+          .from("resumes")
+          .upload(path, v.input.resumeFile, { contentType: "application/pdf", upsert: true });
+        if (uploadErr) throw uploadErr;
+        patch.resume_path = path;
+      }
+
       if (v.input.name !== undefined) patch.name = v.input.name;
       if (v.input.email !== undefined) patch.email = v.input.email;
       if (v.input.phone !== undefined) patch.phone = v.input.phone;
@@ -440,8 +477,14 @@ export function AtsProvider({ children }: { children: ReactNode }) {
 
   const deleteCandidateMut = useMutation({
     mutationFn: async (id: string) => {
+      const resumePath = candidates.find((c) => c.id === id)?.resumePath;
       const { error } = await supabase.from("candidates").delete().eq("id", id);
       if (error) throw error;
+      if (resumePath) {
+        // Best effort: on failure the file is orphaned but unreachable, since
+        // no row keeps the path and RLS still guards the org folder.
+        await supabase.storage.from("resumes").remove([resumePath]);
+      }
     },
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["candidates", activeOrgId] }),
     onError: () => toast.error("Kunde inte radera kandidaten"),
