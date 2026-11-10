@@ -13,6 +13,7 @@ import { loadUser, signOut } from "./auth";
 import { supabase } from "./supabase";
 import {
   createUser as createUserRpc,
+  deleteOrg as deleteOrgRpc,
   deleteUser as deleteUserRpc,
   updateUser as updateUserRpc,
 } from "./users.functions";
@@ -236,8 +237,16 @@ export function AtsProvider({ children }: { children: ReactNode }) {
 
   const deleteOrgMut = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("orgs").delete().eq("id", id);
-      if (error) throw error;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) throw new Error("Ej inloggad");
+      return await deleteOrgRpc({
+        data: {
+          accessToken: session.access_token,
+          orgId: id,
+        },
+      });
     },
     onSuccess: (_data, id) => {
       toast.success("Organisationen togs bort");
@@ -245,10 +254,13 @@ export function AtsProvider({ children }: { children: ReactNode }) {
         s === id ? (organizations.find((o) => o.id !== id)?.id ?? null) : s,
       );
       void qc.invalidateQueries({ queryKey: ["orgs"] });
+      void qc.invalidateQueries({ queryKey: ["profiles"] });
       void qc.invalidateQueries({ queryKey: ["jobs"] });
       void qc.invalidateQueries({ queryKey: ["candidates"] });
     },
-    onError: () => toast.error("Kunde inte ta bort organisationen"),
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Kunde inte ta bort organisationen");
+    },
   });
 
   const createUserMut = useMutation({

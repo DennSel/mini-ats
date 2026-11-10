@@ -41,6 +41,15 @@ const targetOwnerA: TargetUser = {
   orgId: "org-nordvik",
 };
 
+const targetOtherOwnerA: TargetUser = {
+  id: "u-owner-a2",
+  fullName: "Olof Ägare",
+  email: "olof@nordvik.se",
+  role: "customer",
+  orgRole: "owner",
+  orgId: "org-nordvik",
+};
+
 const targetMemberA: TargetUser = {
   id: "u-member-a",
   fullName: "Lars Ek",
@@ -342,15 +351,28 @@ describe("decideDeleteUser (slices 13 & 14)", () => {
     });
   });
 
-  it("nobody can delete themselves or the last owner of an organisation", () => {
+  it("nobody can delete themselves, and customer owners cannot delete the last owner of an org", () => {
     expect(decideDeleteUser(ownerCaller, targetOwnerA, 2)).toEqual({
       ok: false,
       reason: "Du kan inte ta bort dig själv",
     });
-    expect(decideDeleteUser(adminCaller, targetOwnerA, 1)).toEqual({
+    expect(
+      decideDeleteUser(
+        adminCaller,
+        { id: "u-admin", role: "admin", orgRole: "owner", orgId: null },
+        1,
+      ),
+    ).toEqual({
+      ok: false,
+      reason: "Du kan inte ta bort dig själv",
+    });
+    expect(decideDeleteUser(ownerCaller, targetOtherOwnerA, 1)).toEqual({
       ok: false,
       reason: "Organisationen måste ha minst en ägare",
     });
+    expect(decideDeleteUser(ownerCaller, targetOtherOwnerA, 2)).toEqual({ ok: true });
+    // Admin can delete the last user/owner of an organisation (leaving it empty)
+    expect(decideDeleteUser(adminCaller, targetOwnerA, 1)).toEqual({ ok: true });
     expect(decideDeleteUser(adminCaller, targetOwnerA, 2)).toEqual({ ok: true });
   });
 });
